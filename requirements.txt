@@ -1,0 +1,15 @@
+PyYAML
+--index-url https://pypi.python.org/simple/
+
+torch>=0.4.1
+numpy
+ase>=3.19
+schnetpack
+tensorboardX
+h5py
+tqdm
+pytest
+pytest-datadir
+
+pre-commit
+black
