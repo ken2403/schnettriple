@@ -2,7 +2,6 @@ import os
 import warnings
 import logging
 from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -30,7 +29,6 @@ class SchnetAnalysis:
         Whether model using triple properties or not.
 
     """
-
     def __init__(self, modeldir, dbpath, triples=False):
         self.modeldir = os.path.abspath(modeldir)
         self.dbpath = os.path.abspath(dbpath)
@@ -162,8 +160,8 @@ class SchnetAnalysis:
         return plt
 
     def inout_property(
-            self, prop='energy', data='train', divided_by_atoms=True,
-            device='cpu', save=True, _return=False):
+        self, prop='energy', data='train', divided_by_atoms=True,
+        device='cpu', save=True, _return=False):
         """
         Return the atom-by-atom predictions of the system properties
         as an array corresponding to the input values.
@@ -254,6 +252,7 @@ class SchnetAnalysis:
     def _make_io_property_data(
         self, prop, atom_num, props, preds, divided_by_atoms):
         """
+
         """
         ndim = props[prop].ndim
         if ndim == 1:

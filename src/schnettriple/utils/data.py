@@ -1,5 +1,4 @@
 import os
-
 import numpy as np
 import torch
 import schnetpack as spk
@@ -15,16 +14,28 @@ def get_statistics(
 ):
     """
     Get statistics for molecular properties. Use split file if possible.
-    Args:
-        args (argparse.Namespace): parsed script arguments
-        split_path (str): path to the split file
-        train_loader (spk.data.AtomsLoader): dataloader for training set
-        atomref (dict): atomic references
-        divide_by_atoms (dict or bool): divide mean by number of atoms if True
-        logging: logger
-    Returns:
-        mean (dict): mean values for the selected properties
-        stddev (dict): stddev values for the selected properties
+
+    Parameters
+    ----------
+        args : argparse.Namespace
+            parsed script arguments
+        split_path : str
+            path to the split file
+        train_loader : schnetpack.data.AtomsLoader
+            dataloader for training set
+        atomref : dict
+            atomic references
+        divide_by_atoms : dict or bool, default=None
+            divide mean by number of atoms if True
+        logging : default=None
+            logger
+
+    Returns
+    -------
+        mean : dict
+            mean values for the selected properties
+        stddev : dict
+            stddev values for the selected properties
     """
     # check if split file exists
     if not os.path.exists(split_path):
@@ -57,15 +68,24 @@ def get_statistics(
 
 def get_loaders(args, dataset, split_path, logging=None):
     """
-    Create train-val-test splits for dataset and return the corresponding dataloaders.
-    Args:
-        args (argparse.Namespace): parsed script arguments
-        dataset (spk.AtomsData): total dataset
-        split_path (str): path to split file
-        logging: logger
-    Returns:
-        (spk.AtomsLoader, spk.AtomsLoader, spk.AtomsLoader): dataloaders for train,
-            val and test
+    Create train-val-test splits for dataset and
+    return the corresponding dataloaders.
+
+    Parameters
+    ----------
+        args : argparse.Namespace
+            parsed script arguments
+        dataset : schnetpack.AtomsData
+            total dataset
+        split_path : str
+            path to split file
+        logging : default=None
+            logger
+
+    Returns
+    -------
+        (schnetpack.AtomsLoader, schetpack.AtomsLoader, schnetpack.AtomsLoader)
+            dataloaders for train, val and test
     """
     if logging is not None:
         logging.info("create splits...")
@@ -104,13 +124,19 @@ def get_loaders(args, dataset, split_path, logging=None):
 def get_dataset(args, environment_provider, logging=None):
     """
     Get dataset from arguments.
-    Args:
-        args (argparse.Namespace): parsed arguments
-        environment_provider (spk.environment.BaseEnvironmentProvider): environment-
-            provider of dataset
-        logging: logger
-    Returns:
-        spk.data.AtomsData: dataset
+
+    Parameters
+    ----------
+        args : argparse.Namespace
+            parsed arguments
+        environment_provider : schetpack.environment.BaseEnvironmentProvider
+            environment-provider of dataset
+        logging : default=None
+            logger
+    Returns
+    -------
+        schnetpack.data.AtomsData
+            dataset
     """
     if args.dataset == "qm9":
         if logging:

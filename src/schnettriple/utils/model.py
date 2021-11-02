@@ -1,10 +1,10 @@
 import logging
-
 import schnetpack as spk
 from ase.data import atomic_numbers
 import torch.nn as nn
 
 from schnettriple.representation import schnettriple
+
 
 __all__ = ["get_representation", "get_output_module", "get_model"]
 
@@ -178,15 +178,26 @@ def get_output_module(args, representation, mean, stddev, atomref):
 def get_model(args, train_loader, mean, stddev, atomref, logging=None):
     """
     Build a model from selected parameters or load trained model for evaluation.
-    Args:
-        args (argsparse.Namespace): Script arguments
-        train_loader (spk.AtomsLoader): loader for training data
-        mean (torch.Tensor): mean of training data
-        stddev (torch.Tensor): stddev of training data
-        atomref (dict): atomic references
-        logging: logger
-    Returns:
-        spk.AtomisticModel: model for training or evaluation
+
+    Parameters
+    ----------
+        args : argsparse.Namespace
+            Script arguments
+        train_loader : schnetpack.AtomsLoader
+            loader for training data
+        mean : torch.Tensor
+            mean of training data
+        stddev : torch.Tensor
+            stddev of training data
+        atomref : dict
+            atomic references
+        logging : default=None
+            logger
+
+    Returns
+    -------
+        schnetpack.AtomisticModel
+            model for training or evaluation
     """
     if args.mode == "train":
         if logging:
