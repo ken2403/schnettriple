@@ -1,16 +1,13 @@
 import os
 import logging
-
 import torch
 from torch import nn
 from schnetpack.nn import triple_distances
 from schnetpack.nn import Dense
 from schnetpack import Properties
-# from schnetpack.nn.cfconv import CFConv
 from schnetpack.nn.cutoff import CosineCutoff
 from schnetpack.nn.acsf import GaussianSmearing
 from schnetpack.nn.activations import shifted_softplus
-# from schnetpack.utils import get_output_module
 
 from schnettriple.nn.cfconv import CFConvTriple
 
@@ -22,19 +19,26 @@ logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
 
 class SchNetInteractionTriple(nn.Module):
-    """SchNet interaction block for modeling interactions of atomistic systems.
+    """
+    SchNet interaction block for modeling interactions of atomistic systems.
 
-    Args:
-        n_atom_basis (int): number of features to describe atomic environments.
-        n_spatial_basis (int): number of input features of filter-generating networks.
-        n_filters (int): number of filters used in continuous-filter convolution.
-        cutoff (float): cutoff radius.
-        cutoff_network (nn.Module, optional): cutoff layer.
-        normalize_filter (bool, optional): if True, divide aggregated filter by number
+    Attributes
+    ----------
+        n_atom_basis : int
+            number of features to describe atomic environments.
+        n_spatial_basis : int
+            number of input features of filter-generating networks.
+        n_filters : int
+            number of filters used in continuous-filter convolution.
+        cutoff : float
+            cutoff radius.
+        cutoff_network : nn.Module, optional, default=schnetpack.nn.CosineCutoff
+            cutoff layer.
+        normalize_filter : bool, optional, default=False
+            if True, divide aggregated filter by number
             of neighbors over which convolution is applied.
 
     """
-
     def __init__(
         self,
         n_atom_basis,
@@ -69,20 +73,44 @@ class SchNetInteractionTriple(nn.Module):
         self, x, r_ij, r_ik, r_jk,
         neighbors_j, neighbors_k, triple_mask,
         f_ij=None, f_ik=None, f_jk=None):
-        """Compute interaction output.
+        """
+        Compute interaction output.
 
-        Args:
-            x (torch.Tensor): input representation/embedding of atomic environments
+        Parameters
+        ----------
+            x : torch.Tensor
+                input representation/embedding of atomic environments
                 with (N_b, N_a, n_atom_basis) shape.
-            r_ij (torch.Tensor): interatomic distances of (N_b, N_a, N_nbh) shape.
-            neighbors (torch.Tensor): indices of neighbors of (N_b, N_a, N_nbh) shape.
-            neighbor_mask (torch.Tensor): mask to filter out non-existing neighbors
-                introduced via padding.
-            f_ij (torch.Tensor, optional): expanded interatomic distances in a basis.
-                If None, r_ij.unsqueeze(-1) is used.
+            r_ij : torch.Tensor
+                interatomic distances from the centered atom i
+                to the neighbor atom j of (N_b, N_a, N_nbh) shape.
+            r_ik : torch.Tensor
+                interatomic distances from the centered atom i
+                to the neighbor atom k of (N_b, N_a, N_nbh) shape.
+            r_jk : torch.Tensor
+                interatomic distances from the neighbor atom j
+                to  the neighbor atom k of (N_b, N_a, N_nbh) shape.
+            neighbors_j : torch.Tensor
+                of (N_b, N_a, N_nbh) shape.
+            neighbors_k : torch.Tensor
 
-        Returns:
-            torch.Tensor: block output with (N_b, N_a, n_atom_basis) shape.
+            triple_mask : torch.Tensor
+                mask to filter out non-existing neighbors
+                introduced via padding.
+            f_ij : torch.Tensor, optional, default=None
+                expanded interatomic distances in a basis.
+                If None, r_ij.unsqueeze(-1) is used.
+            f_ik : torch.Tensor, optional, default=None
+                expanded interatomic distances in a basis.
+                If None, r_ik.unsqueeze(-1) is used.
+            f_jk : torch.Tensor, optional, default=None
+                expanded interatomic distances in a basis.
+                If None, r_jk.unsqueeze(-1) is used.
+
+        Returns
+        -------
+            torch.Tensor
+                block output with (N_b, N_a, n_atom_basis) shape.
 
         """
         # continuous-filter convolution interaction block followed by Dense layer
@@ -95,32 +123,46 @@ class SchNetInteractionTriple(nn.Module):
 
 
 class SchNetTriple(nn.Module):
-    """SchNet architecture for learning representations of atomistic systems.
+    """
+    SchNet architecture for learning representations of atomistic systems.
 
-    Args:
-        n_atom_basis (int, optional): number of features to describe atomic environments.
-            This determines the size of each embedding vector; i.e. embeddings_dim.
-        n_filters (int, optional): number of filters used in continuous-filter convolution
-        n_interactions (int, optional): number of interaction blocks.
-        cutoff (float, optional): cutoff radius.
-        n_gaussians (int, optional): number of Gaussian functions used to expand
-            atomic distances.
-        normalize_filter (bool, optional): if True, divide aggregated filter by number
+    Attributes
+    ----------
+        n_atom_basis : int, optional, default=128
+            number of features to describe atomic environments.
+            This determines the size of each embedding vector;
+            i.e. embeddings_dim.
+        n_filters : int, optional, default=128
+            number of filters used in continuous-filter convolution
+        n_interactions : int, optional, default=3
+            number of interaction blocks.
+        cutoff : float, optional, default=5.0
+            cutoff radius.
+        n_gaussians : int, optional, default=25
+            number of Gaussian functions used to expand atomic distances.
+        normalize_filter : bool, optional, default=False
+            if True, divide aggregated filter by number
             of neighbors over which convolution is applied.
-        coupled_interactions (bool, optional): if True, share the weights across
-            interaction blocks and filter-generating networks.
-        return_intermediate (bool, optional): if True, `forward` method also returns
-            intermediate atomic representations after each interaction block is applied.
-        max_z (int, optional): maximum nuclear charge allowed in database. This
-            determines the size of the dictionary of embedding; i.e. num_embeddings.
-        cutoff_network (nn.Module, optional): cutoff layer.
-        trainable_gaussians (bool, optional): If True, widths and offset of Gaussian
-            functions are adjusted during training process.
-        distance_expansion (nn.Module, optional): layer for expanding interatomic
-            distances in a basis.
-        charged_systems (bool, optional):
+        coupled_interactions : bool, optional, deault=False
+            if True, share the weights
+            across interaction blocks and filter-generating networks.
+        return_intermediate : bool, optional, default=False
+            if True, `forward` method also returns intermediate atomic representations
+            after each interaction block is applied.
+        max_z : int, optional, defalut=100
+            maximum nuclear charge allowed in database. This determines
+            the size of the dictionary of embedding; i.e. num_embeddings.
+        cutoff_network : nn.Module, optional, default=schnetpack.nn.CosineCutoff
+            cutoff layer.
+        trainable_gaussians : bool, optional, default=False
+            If True, widths and offset of Gaussian functions are adjusted
+            during training process.
+        distance_expansion : nn.Module, optional, default=None
+            layer for expanding interatomic distances in a basis.
+        charged_systems : bool, optional, default=False
 
-    References:
+    References
+    ----------
     .. [#schnet1] Schütt, Arbabzadah, Chmiela, Müller, Tkatchenko:
        Quantum-chemical insights from deep tensor neural networks.
        Nature Communications, 8, 13890. 2017.
@@ -133,7 +175,6 @@ class SchNetTriple(nn.Module):
        The Journal of Chemical Physics 148 (24), 241722. 2018.
 
     """
-
     def __init__(
         self,
         n_atom_basis=128,
@@ -209,15 +250,21 @@ class SchNetTriple(nn.Module):
             self.charge.data.normal_(0, 1.0 / n_atom_basis ** 0.5)
 
     def forward(self, inputs):
-        """Compute atomic representations/embeddings.
+        """
+        Compute atomic representations/embeddings.
 
-        Args:
-            inputs (dict of torch.Tensor): SchNetPack dictionary of input tensors.
+        Parameters
+        ----------
+            inputs : dict of torch.Tensor
+                SchNetPack dictionary of input tensors.
 
-        Returns:
-            torch.Tensor: atom-wise representation.
-            list of torch.Tensor: intermediate atom-wise representations, if
-            return_intermediate=True was used.
+        Returns
+        -------
+            torch.Tensor
+                atom-wise representation.
+            list of torch.Tensor
+                intermediate atom-wise representations,
+                if return_intermediate=True was used.
 
         """
         # get tensors from input dictionary
