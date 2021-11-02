@@ -8,21 +8,30 @@ __all__ = ['CFConvTriple']
 
 
 class CFConvTriple(nn.Module):
-    """Continuous-filter convolution block used in SchNet module.
+    """
+    Continuous-filter convolution block used in SchNet module.
 
-    Args:
-        n_in (int): number of input (i.e. atomic embedding) dimensions.
-        n_filters (int): number of filter dimensions.
-        n_out (int): number of output dimensions.
-        filter_network (nn.Module): filter block.
-        cutoff_network (nn.Module, optional): if None, no cut off function is used.
-        activation (callable, optional): if None, no activation function is used.
-        normalize_filter (bool, optional): If True, normalize filter to the number
-            of neighbors when aggregating.
-        axis (int, optional): axis over which convolution should be applied.
+    Attributes
+    ----------
+        n_in : int
+            number of input (i.e. atomic embedding) dimensions.
+        n_filters : int
+            number of filter dimensions.
+        n_out : int
+            number of output dimensions.
+        filter_network : nn.Module
+            filter block.
+        cutoff_network : nn.Module, optional, default=None
+            if None, no cut off function is used.
+        activation : callable, optional, default=None
+            if None, no activation function is used.
+        normalize_filter : bool, optional, default=False
+            If True, normalize filter to the number of
+            neighbors when aggregating.
+        axis : int, optional, default=2
+            axis over which convolution should be applied.
 
     """
-
     def __init__(
         self,
         n_in,
@@ -42,22 +51,46 @@ class CFConvTriple(nn.Module):
         self.agg = Aggregate(axis=axis, mean=normalize_filter)
 
     def forward(
-        self, x, r_ij, r_ik, r_jk, neighbors_j, neighbors_k,
+        self, x, r_ij, r_ik, r_jk, neighbors_j, neighbors_k
         triple_mask, f_ij=None, f_ik=None, f_jk=None):
-        """Compute convolution block.
+        """
+        Compute convolution block.
 
-        Args:
-            x (torch.Tensor): input representation/embedding of atomic environments
+        Parameters
+        ----------
+            x : torch.Tensor
+                input representation/embedding of atomic environments
                 with (N_b, N_a, n_in) shape.
-            r_ij (torch.Tensor): interatomic distances of (N_b, N_a, N_nbh) shape.
-            neighbors (torch.Tensor): indices of neighbors of (N_b, N_a, N_nbh) shape.
-            pairwise_mask (torch.Tensor): mask to filter out non-existing neighbors
-                introduced via padding.
-            f_ij (torch.Tensor, optional): expanded interatomic distances in a basis.
-                If None, r_ij.unsqueeze(-1) is used.
+            r_ij : torch.Tensor
+                interatomic distances from the centered atom i
+                to the neighbor atom j of (N_b, N_a, N_nbh) shape.
+            r_ik : torch.Tensor
+                interatomic distances from the centered atom i
+                to the neighbor atom k of (N_b, N_a, N_nbh) shape.
+            r_jk : torch.Tensor
+                interatomic distances from the neighbor atom j
+                to  the neighbor atom k of (N_b, N_a, N_nbh) shape.
+            neighbors_j : torch.Tensor
+                of (N_b, N_a, N_nbh) shape.
+            neighbors_k : torch.Tensor
 
-        Returns:
-            torch.Tensor: block output with (N_b, N_a, n_out) shape.
+            triple_mask : torch.Tensor
+                mask to filter out non-existing neighbors
+                introduced via padding.
+            f_ij : torch.Tensor, optional, default=None
+                expanded interatomic distances in a basis.
+                If None, r_ij.unsqueeze(-1) is used.
+            f_ik : torch.Tensor, optional, default=None
+                expanded interatomic distances in a basis.
+                If None, r_ik.unsqueeze(-1) is used.
+            f_jk : torch.Tensor, optional, default=None
+                expanded interatomic distances in a basis.
+                If None, r_jk.unsqueeze(-1) is used.
+
+        Returns
+        -------
+            torch.Tensor
+                block output with (N_b, N_a, n_out) shape.
 
         """
         if f_ij is None:
