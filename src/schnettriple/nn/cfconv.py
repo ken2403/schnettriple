@@ -58,8 +58,8 @@ class CFConvTriple(nn.Module):
         axis=2,
     ):
         super(CFConvTriple, self).__init__()
-        self.in2f = Dense(n_in, n_filters, bias=False, activation=None)
-        self.f2out = Dense(n_filters, n_out, bias=True, activation=activation)
+        self.in2f = Dense(n_in, n_filters*2, bias=False, activation=None)
+        self.f2out = Dense(n_filters*2, n_out, bias=True, activation=activation)
         self.triple_mapping = TripleMapping(
             max_zeta=max_zeta, n_zeta=n_zeta, crossterm=crossterm
         )
@@ -97,13 +97,13 @@ class CFConvTriple(nn.Module):
                 introduced via padding.
             f_ij: torch.Tensor, optional, default=None
                 expanded interatomic distances in a basis.
-                If None, r_ij_double.unsqueeze(-1) is used.
+                If None, r_ij.unsqueeze(-1) is used.
             f_ik: torch.Tensor, optional, default=None
                 expanded interatomic distances in a basis.
-                If None, r_ij_double.unsqueeze(-1) is used.
+                If None, r_ik.unsqueeze(-1) is used.
             f_jk: torch.Tensor, optional, default=None
                 expanded interatomic distances in a basis.
-                If None, r_ij_double.unsqueeze(-1) is used.
+                If None, r_jk.unsqueeze(-1) is used.
 
         Returns
         -------
@@ -137,6 +137,8 @@ class CFConvTriple(nn.Module):
             if self.crossterm:
                 C_jk = self.cutoff_network(r_jk)
                 W_ijk *= C_jk.unsqueeze(-1)
+        # concatinate double and triple filters
+        W_total = torch.cat((W_ij_double, W_ijk), -1)
 
         # pass initial embeddings through Dense layer
         y = self.in2f(x)
@@ -149,7 +151,7 @@ class CFConvTriple(nn.Module):
         y = y.view(nbh_size[0], nbh_size[1], nbh_size[2], -1)
 
         # element-wise multiplication, aggregating and Dense layer
-        y = y * W_ij_double * W_ijk
+        y = y * W_total
         y = self.agg(y, triple_masks)
         y = self.f2out(y)
 
