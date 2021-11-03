@@ -2,13 +2,14 @@ import os
 import logging
 import torch
 from torch import nn
-from schnetpack.nn import triple_distances
 from schnetpack.nn import Dense
 from schnetpack import Properties
 from schnetpack.nn.cutoff import CosineCutoff
 from schnetpack.nn.acsf import GaussianSmearing
 from schnetpack.nn.activations import shifted_softplus
+# from schnetpack.nn.neighbors import AtomDistances
 
+from schnettriple.nn.tripledistances import TriplesDistances
 from schnettriple.nn.cfconv import CFConvTriple
 
 
@@ -30,6 +31,10 @@ class SchNetInteractionTriple(nn.Module):
             number of input features of filter-generating networks.
         n_filters : int
             number of filters used in continuous-filter convolution.
+        max_zeta : int
+
+        n_zeta : int
+
         cutoff : float
             cutoff radius.
         cutoff_network : nn.Module, optional, default=schnetpack.nn.CosineCutoff
@@ -37,6 +42,8 @@ class SchNetInteractionTriple(nn.Module):
         normalize_filter : bool, optional, default=False
             if True, divide aggregated filter by number
             of neighbors over which convolution is applied.
+        crossterm : bool, default=False
+            if True,
 
     """
     def __init__(
@@ -44,14 +51,22 @@ class SchNetInteractionTriple(nn.Module):
         n_atom_basis,
         n_spatial_basis,
         n_filters,
+        max_zeta,
+        n_zeta,
         cutoff,
         cutoff_network=CosineCutoff,
+        crossterm=False,
         normalize_filter=False,
     ):
         super(SchNetInteractionTriple, self).__init__()
         # filter block used in interaction block
-        self.filter_network = nn.Sequential(
+        self.filter_network_double = nn.Sequential(
             Dense(n_spatial_basis, n_filters, activation=shifted_softplus),
+            Dense(n_filters, n_filters),
+        )
+        # fiter block for triple
+        self.filter_network_triple = nn.Sequential(
+            Dense(n_spatial_basis * n_zeta * 2, n_filters, activation=shifted_softplus),
             Dense(n_filters, n_filters),
         )
         # cutoff layer used in interaction block
@@ -61,18 +76,22 @@ class SchNetInteractionTriple(nn.Module):
             n_atom_basis,
             n_filters,
             n_atom_basis,
-            self.filter_network,
+            max_zeta,
+            n_zeta,
+            self.filter_network_double,
+            self.filter_network_triple,
             cutoff_network=self.cutoff_network,
             activation=shifted_softplus,
+            crossterm=crossterm,
             normalize_filter=normalize_filter,
         )
         # dense layer
         self.dense = Dense(n_atom_basis, n_atom_basis, bias=True, activation=None)
 
     def forward(
-        self, x, r_ij, r_ik, r_jk,
-        neighbors_j, neighbors_k, triple_mask,
-        f_ij=None, f_ik=None, f_jk=None):
+        self, x, r_ij, r_ik, r_jk, neighbors_j, triple_masks,
+        f_ij=None, f_ik=None, f_jk=None
+    ):
         """
         Compute interaction output.
 
@@ -81,31 +100,29 @@ class SchNetInteractionTriple(nn.Module):
             x : torch.Tensor
                 input representation/embedding of atomic environments
                 with (N_b, N_a, n_atom_basis) shape.
-            r_ij : torch.Tensor
+            r_ij: torch.Tensor
                 interatomic distances from the centered atom i
                 to the neighbor atom j of (N_b, N_a, N_nbh) shape.
             r_ik : torch.Tensor
                 interatomic distances from the centered atom i
                 to the neighbor atom k of (N_b, N_a, N_nbh) shape.
-            r_jk : torch.Tensor
+            r_jk : torch.Tensor, optional, default=None
                 interatomic distances from the neighbor atom j
-                to  the neighbor atom k of (N_b, N_a, N_nbh) shape.
+                to the neighbor atom k of (N_b, N_a, N_nbh) shape.
             neighbors_j : torch.Tensor
                 of (N_b, N_a, N_nbh) shape.
-            neighbors_k : torch.Tensor
-
-            triple_mask : torch.Tensor
+            triple_masks : torch.Tensor
                 mask to filter out non-existing neighbors
                 introduced via padding.
             f_ij : torch.Tensor, optional, default=None
                 expanded interatomic distances in a basis.
-                If None, r_ij.unsqueeze(-1) is used.
+                If None, r_ij_triple.unsqueeze(-1) is used.
             f_ik : torch.Tensor, optional, default=None
                 expanded interatomic distances in a basis.
-                If None, r_ik.unsqueeze(-1) is used.
+                If None, r_ik_triple.unsqueeze(-1) is used.
             f_jk : torch.Tensor, optional, default=None
                 expanded interatomic distances in a basis.
-                If None, r_jk.unsqueeze(-1) is used.
+                If None, r_jk_triple.unsqueeze(-1) is used.
 
         Returns
         -------
@@ -115,8 +132,9 @@ class SchNetInteractionTriple(nn.Module):
         """
         # continuous-filter convolution interaction block followed by Dense layer
         v = self.cfconv(
-            x, r_ij, r_ik, r_jk, neighbors_j, neighbors_k,
-            triple_mask, f_ij, f_ik, f_jk)
+                x, r_ij, r_ik, r_jk, neighbors_j, triple_masks,
+                f_ij, f_ik, f_jk
+        )
         v = self.dense(v)
 
         return v
@@ -140,6 +158,10 @@ class SchNetTriple(nn.Module):
             cutoff radius.
         n_gaussians : int, optional, default=25
             number of Gaussian functions used to expand atomic distances.
+        max_zeta : int, default=1
+
+        n_zeta : int, default=1
+
         normalize_filter : bool, optional, default=False
             if True, divide aggregated filter by number
             of neighbors over which convolution is applied.
@@ -157,9 +179,13 @@ class SchNetTriple(nn.Module):
         trainable_gaussians : bool, optional, default=False
             If True, widths and offset of Gaussian functions are adjusted
             during training process.
-        distance_expansion : nn.Module, optional, default=None
-            layer for expanding interatomic distances in a basis.
+        distance_expansion_double : nn.Module, optional, default=None
+            layer for expanding interatomic distances for double in a basis.
+        distance_expansion_triple : nn.Module, optional, default=None
+            layer for expanding interatomic distances for triple in a basis.
         charged_systems : bool, optional, default=False
+        crossterm : bool, default=False
+            if True,
 
     References
     ----------
@@ -182,33 +208,35 @@ class SchNetTriple(nn.Module):
         n_interactions=3,
         cutoff=5.0,
         n_gaussians=25,
+        max_zeta=1,
+        n_zeta=1,
         normalize_filter=False,
         coupled_interactions=False,
         return_intermediate=False,
         max_z=100,
         cutoff_network=CosineCutoff,
         trainable_gaussians=False,
-        distance_expansion=None,
+        distance_expansion_triple=None,
         charged_systems=False,
+        crossterm=False
     ):
         super(SchNetTriple, self).__init__()
-
+        self.crossterm = crossterm
         self.n_atom_basis = n_atom_basis
-        # make a lookup table to store embeddings for each element (up to atomic
-        # number max_z) each of which is a vector of size n_atom_basis
+        # make a lookup table to store embeddings for each element (up to atomic number max_z)
+        # each of which is a vector of size (N_batch * N_atoms * n_atom_basis)
         self.embedding = nn.Embedding(max_z, n_atom_basis, padding_idx=0)
 
         # layer for computing interatomic distances
-        # !!calculate triple distances
-        # self.distances = TriplesDistances()
+        self.triple_distances = TriplesDistances()
 
         # layer for expanding interatomic distances in a basis
-        if distance_expansion is None:
-            self.distance_expansion = GaussianSmearing(
+        if distance_expansion_triple is None:
+            self.distance_expansion_triple = GaussianSmearing(
                 0.0, cutoff, n_gaussians, trainable=trainable_gaussians
             )
         else:
-            self.distance_expansion = distance_expansion
+            self.distance_expansion_triple = distance_expansion_triple
 
         # block for computing interaction
         if coupled_interactions:
@@ -219,8 +247,11 @@ class SchNetTriple(nn.Module):
                         n_atom_basis=n_atom_basis,
                         n_spatial_basis=n_gaussians,
                         n_filters=n_filters,
-                        cutoff_network=cutoff_network,
+                        max_zeta=max_zeta,
+                        n_zeta=n_zeta,
                         cutoff=cutoff,
+                        cutoff_network=cutoff_network,
+                        crossterm=self.crossterm,
                         normalize_filter=normalize_filter,
                     )
                 ]
@@ -234,8 +265,11 @@ class SchNetTriple(nn.Module):
                         n_atom_basis=n_atom_basis,
                         n_spatial_basis=n_gaussians,
                         n_filters=n_filters,
-                        cutoff_network=cutoff_network,
+                        max_zeta=max_zeta,
+                        n_zeta=n_zeta,
                         cutoff=cutoff,
+                        cutoff_network=cutoff_network,
+                        crossterm=self.crossterm,
                         normalize_filter=normalize_filter,
                     )
                     for _ in range(n_interactions)
@@ -270,17 +304,17 @@ class SchNetTriple(nn.Module):
         # get tensors from input dictionary
         atomic_numbers = inputs[Properties.Z]
         positions = inputs[Properties.R]
+        atom_mask = inputs[Properties.atom_mask]
         cell = inputs[Properties.cell]
         cell_offset = inputs[Properties.cell_offset]
         # neighbors = inputs[Properties.neighbors]
         # neighbor_mask = inputs[Properties.neighbor_mask]
-        atom_mask = inputs[Properties.atom_mask]
         # triple property
         neighbors_j = inputs[Properties.neighbor_pairs_j]
         neighbors_k = inputs[Properties.neighbor_pairs_k]
         neighbor_offsets_j = inputs[Properties.neighbor_offsets_j]
         neighbor_offsets_k = inputs[Properties.neighbor_offsets_k]
-        triple_mask = inputs[Properties.neighbor_pairs_mask]
+        triple_masks = inputs[Properties.neighbor_pairs_mask]
 
         # get atom embeddings for the input atomic numbers
         x = self.embedding(atomic_numbers)
@@ -291,16 +325,19 @@ class SchNetTriple(nn.Module):
             charge = charge[:, None] * self.charge  # B x F
             x = x + charge
 
-        # !!compute tirple distance of every atom to its neighbors!!
-        r_ijk = triple_distances(
+        # compute tirple distances of every atom to its neighbors
+        r_ijk = self.triple_distances(
             positions, neighbors_j, neighbors_k,
             offset_idx_j=neighbor_offsets_j, offset_idx_k=neighbor_offsets_k,
             cell=cell, cell_offsets=cell_offset
         )
         # expand interatomic distances (for example, Gaussian smearing)
-        f_ij = self.distance_expansion(r_ijk[0])
+        f_ij = self.distance_expansion_triple(r_ijk[0])
         f_ik = self.distance_expansion(r_ijk[1])
-        f_jk = self.distance_expansion(r_ijk[2])
+        if self.crossterm:
+            f_jk = self.distance_expansion(r_ijk[2])
+        else:
+            f_jk = None
 
         # store intermediate representations
         if self.return_intermediate:
@@ -308,8 +345,8 @@ class SchNetTriple(nn.Module):
         # compute interaction block to update atomic embeddings
         for interaction in self.interactions:
             v = interaction(
-                x, r_ijk[0], r_ijk[1], r_ijk[2], neighbors_j, neighbors_k,
-                triple_mask, f_ij=f_ij, f_ik=f_ik, f_jk=f_jk)
+                    x, r_ijk[0], r_ijk[1], r_ijk[2], neighbors_j, triple_masks,
+                    f_ij=f_ij, f_ik=f_ik, f_jk=f_jk)
             x = x + v
             if self.return_intermediate:
                 xs.append(x)
