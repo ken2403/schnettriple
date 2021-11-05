@@ -13,6 +13,7 @@ class AngularMapping(nn.Module):
     ----------
 
     """
+
     def __init__(
         self,
         max_zeta=1,
@@ -32,13 +33,18 @@ class AngularMapping(nn.Module):
 
         """
         # calculate angular_fetures
-        cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) - torch.pow(r_jk, 2)) / (
-            2.0 * r_ij * r_ik)
+        cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) -
+                     torch.pow(r_jk, 2)) / (2.0 * r_ij * r_ik)
         # Required in order to catch NaNs during backprop
         if triple_masks is not None:
             cos_theta[triple_masks == 0] = 0.0
 
-        zetas = np.logspase(0, stop=np.log2(self.max_zeta), num=self.n_zeta, base=2)
+        zetas = np.logspace(
+            0,
+            stop=np.log2(
+                self.max_zeta),
+            num=self.n_zeta,
+            base=2)
         angular_pos = [
             2 ** (1 - zeta) * ((1.0 - cos_theta) ** zeta).unsqueeze(-1)
             for zeta in zetas
@@ -67,6 +73,7 @@ class TripleMapping(nn.Module):
     ----------
 
     """
+
     def __init__(
         self,
         max_zeta=1,
@@ -96,13 +103,16 @@ class TripleMapping(nn.Module):
         radial_mapping = f_ij * f_ik
         if self.crossterm:
             if f_jk is None:
-                raise TypeError("TripleMapping() missing 1 required positional argument: 'f_jk'")
+                raise TypeError(
+                    "TripleMapping() missing 1 required positional argument: 'f_jk'")
             else:
                 radial_mapping *= f_jk
 
         # combnation of angular and radial filter
-        total_mapping = angular_mapping[:, :, :, :, None] * radial_mapping[:, :, :, None, :]
+        total_mapping = angular_mapping[:, :, :, :,
+                                        None] * radial_mapping[:, :, :, None, :]
         # reshape (N_batch * N_atom * N_nbh * N_filter_features)
-        total_mapping = total_mapping.reshape(n_batch, n_atoms, n_neighbors, -1)
+        total_mapping = total_mapping.reshape(
+            n_batch, n_atoms, n_neighbors, -1)
 
         return total_mapping

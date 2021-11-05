@@ -46,6 +46,7 @@ class SchNetInteractionTriple(nn.Module):
             if True,
 
     """
+
     def __init__(
         self,
         n_atom_basis,
@@ -66,8 +67,13 @@ class SchNetInteractionTriple(nn.Module):
         )
         # fiter block for triple
         self.filter_network_triple = nn.Sequential(
-            Dense(n_spatial_basis * n_zeta * 2, n_filters, activation=shifted_softplus),
-            Dense(n_filters, n_filters),
+            Dense(
+                n_spatial_basis * n_zeta * 2,
+                n_filters,
+                activation=shifted_softplus),
+            Dense(
+                n_filters,
+                n_filters),
         )
         # cutoff layer used in interaction block
         self.cutoff_network = cutoff_network(cutoff)
@@ -86,7 +92,11 @@ class SchNetInteractionTriple(nn.Module):
             normalize_filter=normalize_filter,
         )
         # dense layer
-        self.dense = Dense(n_atom_basis, n_atom_basis, bias=True, activation=None)
+        self.dense = Dense(
+            n_atom_basis,
+            n_atom_basis,
+            bias=True,
+            activation=None)
 
     def forward(
         self, x, r_ij, r_ik, r_jk, neighbors_j, triple_masks,
@@ -130,10 +140,11 @@ class SchNetInteractionTriple(nn.Module):
                 block output with (N_b, N_a, n_atom_basis) shape.
 
         """
-        # continuous-filter convolution interaction block followed by Dense layer
+        # continuous-filter convolution interaction block followed by Dense
+        # layer
         v = self.cfconv(
-                x, r_ij, r_ik, r_jk, neighbors_j, triple_masks,
-                f_ij, f_ik, f_jk
+            x, r_ij, r_ik, r_jk, neighbors_j, triple_masks,
+            f_ij, f_ik, f_jk
         )
         v = self.dense(v)
 
@@ -201,6 +212,7 @@ class SchNetTriple(nn.Module):
        The Journal of Chemical Physics 148 (24), 241722. 2018.
 
     """
+
     def __init__(
         self,
         n_atom_basis=128,
@@ -333,9 +345,9 @@ class SchNetTriple(nn.Module):
         )
         # expand interatomic distances (for example, Gaussian smearing)
         f_ij = self.distance_expansion_triple(r_ijk[0])
-        f_ik = self.distance_expansion(r_ijk[1])
+        f_ik = self.distance_expansion_triple(r_ijk[1])
         if self.crossterm:
-            f_jk = self.distance_expansion(r_ijk[2])
+            f_jk = self.distance_expansion_triple(r_ijk[2])
         else:
             f_jk = None
 
@@ -345,8 +357,8 @@ class SchNetTriple(nn.Module):
         # compute interaction block to update atomic embeddings
         for interaction in self.interactions:
             v = interaction(
-                    x, r_ijk[0], r_ijk[1], r_ijk[2], neighbors_j, triple_masks,
-                    f_ij=f_ij, f_ik=f_ik, f_jk=f_jk)
+                x, r_ijk[0], r_ijk[1], r_ijk[2], neighbors_j, triple_masks,
+                f_ij=f_ij, f_ik=f_ik, f_jk=f_jk)
             x = x + v
             if self.return_intermediate:
                 xs.append(x)

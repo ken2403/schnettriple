@@ -3,6 +3,9 @@ PyYAML
 
 torch>=0.4.1
 numpy
+pandas
+matplotlib
+sklearn
 ase>=3.19
 schnetpack
 tensorboardX
