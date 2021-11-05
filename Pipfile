@@ -1,0 +1,31 @@
+[[source]]
+name= "pypi"
+url= "https://pypi.org/simple"
+verify_ssl= true
+
+[[source]]
+name= "pytorch"
+url= "https://download.pytorch.org/whl/torch_stable.html"
+verify_ssl= false
+
+[packages]
+torch= {index= "pytorch",version= ">=0.4.0"}
+numpy = "*"
+pandas = "*"
+matplotlib = "*"
+sklearn = "*"
+ase = ">=3.19"
+schnetpack = "*"
+h5py = "*"
+tqdm = "*"
+
+[dev-packages]
+pytest = "*"
+pytest-datadir = "*"
+pre-commit = "*"
+black = "*"
+PyYAML = "*"
+tensorboardX = "*"
+
+[requires]
+python_version= "3.8"
