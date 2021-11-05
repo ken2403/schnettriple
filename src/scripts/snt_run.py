@@ -15,10 +15,10 @@ from schnetpack.utils import (
 from schnetpack.utils.script_utils.settings import get_environment_provider
 from schnetpack.utils.script_utils.parsing import build_parser
 
-sys.path.append('/home/nishio/code/mymodu/code')
-from model import get_model
-from data import get_dataset, get_statistics, get_loaders
-from evaluation import evaluate
+from schnettriple.utiles.evaluation import evaluate
+from schnettriple.utiles.data import get_dataset, get_statistics, get_loaders
+from schnettriple.utiles.model import get_model
+
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
@@ -31,7 +31,9 @@ def main(args):
 
     # get dataset
     environment_provider = get_environment_provider(train_args, device=device)
-    dataset = get_dataset(train_args, environment_provider=environment_provider)
+    dataset = get_dataset(
+        train_args,
+        environment_provider=environment_provider)
 
     # get dataloaders
     split_path = os.path.join(args.modelpath, "split.npz")
@@ -57,7 +59,13 @@ def main(args):
         )
 
         # build model
-        model = get_model(args, train_loader, mean, stddev, atomref, logging=logging)
+        model = get_model(
+            args,
+            train_loader,
+            mean,
+            stddev,
+            atomref,
+            logging=logging)
 
         # build trainer
         logging.info("training...")
@@ -77,8 +85,7 @@ def main(args):
             else:
                 raise ScriptError(
                     "The evaluation file does already exist at {}! Add overwrite flag"
-                    " to remove.".format(evaluation_fp)
-                )
+                    " to remove.".format(evaluation_fp))
 
         # load model
         logging.info("loading trained model...")
