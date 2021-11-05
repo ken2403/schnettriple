@@ -10,10 +10,10 @@ import torch
 import schnetpack as spk
 
 
-__all__ = ['SchnetAnalysis']
+__all__ = ['SchNetAnalysis']
 
 
-class SchnetAnalysis:
+class SchNetAnalysis:
     """
     Generate the object for analysis of schnet based on
     the directory of the learned model and the path of the database.
@@ -29,6 +29,7 @@ class SchnetAnalysis:
         Whether model using triple properties or not.
 
     """
+
     def __init__(self, modeldir, dbpath, triples=False):
         self.modeldir = os.path.abspath(modeldir)
         self.dbpath = os.path.abspath(dbpath)
@@ -160,8 +161,8 @@ class SchnetAnalysis:
         return plt
 
     def inout_property(
-        self, prop='energy', data='train', divided_by_atoms=True,
-        device='cpu', save=True, _return=False):
+            self, prop='energy', data='train', divided_by_atoms=True,
+            device='cpu', save=True, _return=False):
         """
         Return the atom-by-atom predictions of the system properties
         as an array corresponding to the input values.
@@ -208,10 +209,11 @@ class SchnetAnalysis:
         first = True
         for idx in indexes:
             idx = int(idx)
-            atom_num, props, preds = self._pred_one_schnet(model=bestmodel, idx=idx, device=device)
+            atom_num, props, preds = self._pred_one_schnet(
+                model=bestmodel, idx=idx, device=device)
             ndim, in_data, out_data = self._make_io_property_data(
-                                        prop, atom_num, props, preds,
-                                        divided_by_atoms=divided_by_atoms)
+                prop, atom_num, props, preds,
+                divided_by_atoms=divided_by_atoms)
             if ndim == 1:
                 if first:
                     in_prop = in_data
@@ -250,7 +252,7 @@ class SchnetAnalysis:
             return None
 
     def _make_io_property_data(
-        self, prop, atom_num, props, preds, divided_by_atoms):
+            self, prop, atom_num, props, preds, divided_by_atoms):
         """
 
         """
@@ -261,7 +263,8 @@ class SchnetAnalysis:
                 if isinstance(props[prop], np.ndarray):
                     in_data = np.expand_dims(props[prop] / atom_num, axis=0)
                 if not isinstance(props[prop], np.ndarray):
-                    in_data = np.expand_dims(props[prop].cpu().numpy() / atom_num, axis=0)
+                    in_data = np.expand_dims(
+                        props[prop].cpu().numpy() / atom_num, axis=0)
             if not divided_by_atoms:
                 out_data = preds[prop].detach().cpu().numpy()
                 if isinstance(props[prop], np.ndarray):
@@ -310,7 +313,8 @@ class SchnetAnalysis:
                 Dict with predictions values in torch.tensor type.
         """
         dataset = spk.AtomsData(self.dbpath, collect_triples=self.triples)
-        converter = spk.data.AtomsConverter(collect_triples=self.triples, device=device)
+        converter = spk.data.AtomsConverter(
+            collect_triples=self.triples, device=device)
 
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
