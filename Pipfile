@@ -18,14 +18,17 @@ ase = ">=3.19"
 schnetpack = "*"
 h5py = "*"
 tqdm = "*"
+tensorboardX = "*"
+pyyaml = "*"
 
 [dev-packages]
 pytest = "*"
 pytest-datadir = "*"
+pytest-console-scripts = "*"
+pytest-datadir = "*"
+sacred = "*"
 pre-commit = "*"
 black = "*"
-PyYAML = "*"
-tensorboardX = "*"
 
 [requires]
 python_version= "3.8"
