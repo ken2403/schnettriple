@@ -15,9 +15,9 @@ from schnetpack.utils import (
 from schnetpack.utils.script_utils.settings import get_environment_provider
 from schnetpack.utils.script_utils.parsing import build_parser
 
-from schnettriple.utiles.evaluation import evaluate
-from schnettriple.utiles.data import get_dataset, get_statistics, get_loaders
-from schnettriple.utiles.model import get_model
+from schnettriple.utils.evaluation import evaluate
+from schnettriple.utils.data import get_dataset, get_statistics, get_loaders
+from schnettriple.utils.model import get_model
 
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
