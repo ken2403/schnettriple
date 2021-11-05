@@ -7,13 +7,14 @@ from schnetpack import Properties
 from schnetpack.nn.cutoff import CosineCutoff
 from schnetpack.nn.acsf import GaussianSmearing
 from schnetpack.nn.activations import shifted_softplus
+
 # from schnetpack.nn.neighbors import AtomDistances
 
 from schnettriple.nn.tripledistances import TriplesDistances
 from schnettriple.nn.cfconv import CFConvTriple
 
 
-__all__ = ['SchNetInteractionTriple', 'SchNetTriple']
+__all__ = ["SchNetInteractionTriple", "SchNetTriple"]
 
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
@@ -67,13 +68,8 @@ class SchNetInteractionTriple(nn.Module):
         )
         # fiter block for triple
         self.filter_network_triple = nn.Sequential(
-            Dense(
-                n_spatial_basis * n_zeta * 2,
-                n_filters,
-                activation=shifted_softplus),
-            Dense(
-                n_filters,
-                n_filters),
+            Dense(n_spatial_basis * n_zeta * 2, n_filters, activation=shifted_softplus),
+            Dense(n_filters, n_filters),
         )
         # cutoff layer used in interaction block
         self.cutoff_network = cutoff_network(cutoff)
@@ -92,15 +88,19 @@ class SchNetInteractionTriple(nn.Module):
             normalize_filter=normalize_filter,
         )
         # dense layer
-        self.dense = Dense(
-            n_atom_basis,
-            n_atom_basis,
-            bias=True,
-            activation=None)
+        self.dense = Dense(n_atom_basis, n_atom_basis, bias=True, activation=None)
 
     def forward(
-        self, x, r_ij, r_ik, r_jk, neighbors_j, triple_masks,
-        f_ij=None, f_ik=None, f_jk=None
+        self,
+        x,
+        r_ij,
+        r_ik,
+        r_jk,
+        neighbors_j,
+        triple_masks,
+        f_ij=None,
+        f_ik=None,
+        f_jk=None,
     ):
         """
         Compute interaction output.
@@ -143,8 +143,7 @@ class SchNetInteractionTriple(nn.Module):
         # continuous-filter convolution interaction block followed by Dense
         # layer
         v = self.cfconv(
-            x, r_ij, r_ik, r_jk, neighbors_j, triple_masks,
-            f_ij, f_ik, f_jk
+            x, r_ij, r_ik, r_jk, neighbors_j, triple_masks, f_ij, f_ik, f_jk
         )
         v = self.dense(v)
 
@@ -230,7 +229,7 @@ class SchNetTriple(nn.Module):
         trainable_gaussians=False,
         distance_expansion_triple=None,
         charged_systems=False,
-        crossterm=False
+        crossterm=False,
     ):
         super(SchNetTriple, self).__init__()
         self.crossterm = crossterm
@@ -339,9 +338,13 @@ class SchNetTriple(nn.Module):
 
         # compute tirple distances of every atom to its neighbors
         r_ijk = self.triple_distances(
-            positions, neighbors_j, neighbors_k,
-            offset_idx_j=neighbor_offsets_j, offset_idx_k=neighbor_offsets_k,
-            cell=cell, cell_offsets=cell_offset
+            positions,
+            neighbors_j,
+            neighbors_k,
+            offset_idx_j=neighbor_offsets_j,
+            offset_idx_k=neighbor_offsets_k,
+            cell=cell,
+            cell_offsets=cell_offset,
         )
         # expand interatomic distances (for example, Gaussian smearing)
         f_ij = self.distance_expansion_triple(r_ijk[0])
@@ -357,8 +360,16 @@ class SchNetTriple(nn.Module):
         # compute interaction block to update atomic embeddings
         for interaction in self.interactions:
             v = interaction(
-                x, r_ijk[0], r_ijk[1], r_ijk[2], neighbors_j, triple_masks,
-                f_ij=f_ij, f_ik=f_ik, f_jk=f_jk)
+                x,
+                r_ijk[0],
+                r_ijk[1],
+                r_ijk[2],
+                neighbors_j,
+                triple_masks,
+                f_ij=f_ij,
+                f_ik=f_ik,
+                f_jk=f_jk,
+            )
             x = x + v
             if self.return_intermediate:
                 xs.append(x)

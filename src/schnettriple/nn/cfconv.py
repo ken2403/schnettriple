@@ -6,7 +6,7 @@ from schnetpack.nn.base import Aggregate
 from schnettriple.nn.mapping import TripleMapping
 
 
-__all__ = ['CFConvTriple']
+__all__ = ["CFConvTriple"]
 
 
 class CFConvTriple(nn.Module):
@@ -42,6 +42,7 @@ class CFConvTriple(nn.Module):
             axis over which convolution should be applied.
 
     """
+
     def __init__(
         self,
         n_in,
@@ -58,8 +59,8 @@ class CFConvTriple(nn.Module):
         axis=2,
     ):
         super(CFConvTriple, self).__init__()
-        self.in2f = Dense(n_in, n_filters*2, bias=False, activation=None)
-        self.f2out = Dense(n_filters*2, n_out, bias=True, activation=activation)
+        self.in2f = Dense(n_in, n_filters * 2, bias=False, activation=None)
+        self.f2out = Dense(n_filters * 2, n_out, bias=True, activation=activation)
         self.triple_mapping = TripleMapping(
             max_zeta=max_zeta, n_zeta=n_zeta, crossterm=crossterm
         )
@@ -70,8 +71,16 @@ class CFConvTriple(nn.Module):
         self.agg = Aggregate(axis=axis, mean=normalize_filter)
 
     def forward(
-        self, x, r_ij, r_ik, r_jk, neighbors_j, triple_masks,
-        f_ij=None, f_ik=None, f_jk=None
+        self,
+        x,
+        r_ij,
+        r_ik,
+        r_jk,
+        neighbors_j,
+        triple_masks,
+        f_ij=None,
+        f_ik=None,
+        f_jk=None,
     ):
         """
         Compute convolution block.

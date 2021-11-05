@@ -23,16 +23,17 @@ def evaluate(
     for datasplit in args.split:
         header += ["{} MAE".format(datasplit), "{} RMSE".format(datasplit)]
         if args.parallel:
-            model.to(f'cuda:{model.device_ids[0]}')
+            model.to(f"cuda:{model.device_ids[0]}")
 
             state_dict = model.state_dict()
             from collections import OrderedDict
+
             new_state_dict = OrderedDict()
             for k, v in state_dict.items():
-                v.to(f'cuda:{model.device_ids[0]}')
+                v.to(f"cuda:{model.device_ids[0]}")
                 new_state_dict[k] = v
             model.load_state_dict(new_state_dict)
-            device = f'cuda:{model.device_ids[0]}'
+            device = f"cuda:{model.device_ids[0]}"
             derivative = model.module.output_modules[0].derivative
         if not args.parallel:
             derivative = model.output_modules[0].derivative
