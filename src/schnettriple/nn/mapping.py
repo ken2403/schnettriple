@@ -37,7 +37,7 @@ class AngularMapping(nn.Module):
             cos_theta[triple_masks == 0] = 0.0
 
         zetas = torch.logspace(0, end=np.log2(self.max_zeta), steps=self.n_zeta, base=2)
-        self.register_buffer("zetas", zetas)
+        # self.register_buffer("zetas", zetas)
 
         angular_pos = [
             2 ** (1 - zeta) * ((1.0 - cos_theta) ** zeta).unsqueeze(-1)
