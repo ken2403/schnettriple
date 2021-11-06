@@ -1,4 +1,4 @@
-__version_info__ = (0, 1, 0)
+__version_info__ = (0, 1, 1)
 """
 - 3体のfilterをconcatinateせずに、2体のfileterと別々にconvolutionする
 - reshapeとaggを2体と3体とで別々に行う。
