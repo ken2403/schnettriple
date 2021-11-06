@@ -7,8 +7,7 @@ from schnetpack import Properties
 from schnetpack.nn.cutoff import CosineCutoff
 from schnetpack.nn.acsf import GaussianSmearing
 from schnetpack.nn.activations import shifted_softplus
-
-# from schnetpack.nn.neighbors import AtomDistances
+from schnetpack.nn.neighbors import AtomDistances
 
 from schnettriple.nn.tripledistances import TriplesDistances
 from schnettriple.nn.cfconv import CFConvTriple
@@ -64,12 +63,12 @@ class SchNetInteractionTriple(nn.Module):
         # filter block used in interaction block
         self.filter_network_double = nn.Sequential(
             Dense(n_spatial_basis, n_filters, activation=shifted_softplus),
-            Dense(n_filters, n_filters),
+            Dense(n_filters, n_filters, activation=shifted_softplus),
         )
         # fiter block for triple
         self.filter_network_triple = nn.Sequential(
             Dense(n_spatial_basis * n_zeta * 2, n_filters, activation=shifted_softplus),
-            Dense(n_filters, n_filters),
+            Dense(n_filters, n_filters, activation=shifted_softplus),
         )
         # cutoff layer used in interaction block
         self.cutoff_network = cutoff_network(cutoff)
@@ -93,11 +92,15 @@ class SchNetInteractionTriple(nn.Module):
     def forward(
         self,
         x,
+        r_double,
         r_ij,
         r_ik,
         r_jk,
+        neighbors,
+        neighbor_mask,
         neighbors_j,
         triple_masks,
+        f_double=None,
         f_ij=None,
         f_ik=None,
         f_jk=None,
@@ -110,7 +113,9 @@ class SchNetInteractionTriple(nn.Module):
             x : torch.Tensor
                 input representation/embedding of atomic environments
                 with (N_b, N_a, n_atom_basis) shape.
-            r_ij: torch.Tensor
+            r_double : torch.tensor
+
+            r_ij : torch.Tensor
                 interatomic distances from the centered atom i
                 to the neighbor atom j of (N_b, N_a, N_nbh) shape.
             r_ik : torch.Tensor
@@ -119,11 +124,17 @@ class SchNetInteractionTriple(nn.Module):
             r_jk : torch.Tensor, optional, default=None
                 interatomic distances from the neighbor atom j
                 to the neighbor atom k of (N_b, N_a, N_nbh) shape.
+            neighbors :
+
+            neighbor_mask :
+
             neighbors_j : torch.Tensor
                 of (N_b, N_a, N_nbh) shape.
             triple_masks : torch.Tensor
                 mask to filter out non-existing neighbors
                 introduced via padding.
+            f_double : torch.Tensor
+
             f_ij : torch.Tensor, optional, default=None
                 expanded interatomic distances in a basis.
                 If None, r_ij_triple.unsqueeze(-1) is used.
@@ -143,7 +154,19 @@ class SchNetInteractionTriple(nn.Module):
         # continuous-filter convolution interaction block followed by Dense
         # layer
         v = self.cfconv(
-            x, r_ij, r_ik, r_jk, neighbors_j, triple_masks, f_ij, f_ik, f_jk
+            x,
+            r_double,
+            r_ij,
+            r_ik,
+            r_jk,
+            neighbors,
+            neighbor_mask,
+            neighbors_j,
+            triple_masks,
+            f_double,
+            f_ij,
+            f_ik,
+            f_jk,
         )
         v = self.dense(v)
 
@@ -227,6 +250,7 @@ class SchNetTriple(nn.Module):
         max_z=100,
         cutoff_network=CosineCutoff,
         trainable_gaussians=False,
+        distance_expansion_double=None,
         distance_expansion_triple=None,
         charged_systems=False,
         crossterm=False,
@@ -239,12 +263,20 @@ class SchNetTriple(nn.Module):
         self.embedding = nn.Embedding(max_z, n_atom_basis, padding_idx=0)
 
         # layer for computing interatomic distances
+        self.double_ditances = AtomDistances()
         self.triple_distances = TriplesDistances()
 
         # layer for expanding interatomic distances in a basis
+        if distance_expansion_double is None:
+            self.distance_expansion_double = GaussianSmearing(
+                0.0, cutoff, n_gaussians, centered=False, trainable=trainable_gaussians
+            )
+        else:
+            self.distance_expansion_double = distance_expansion_double
+
         if distance_expansion_triple is None:
             self.distance_expansion_triple = GaussianSmearing(
-                0.0, cutoff, n_gaussians, trainable=trainable_gaussians
+                0.0, cutoff, n_gaussians, centered=True, trainable=trainable_gaussians
             )
         else:
             self.distance_expansion_triple = distance_expansion_triple
@@ -318,8 +350,8 @@ class SchNetTriple(nn.Module):
         atom_mask = inputs[Properties.atom_mask]
         cell = inputs[Properties.cell]
         cell_offset = inputs[Properties.cell_offset]
-        # neighbors = inputs[Properties.neighbors]
-        # neighbor_mask = inputs[Properties.neighbor_mask]
+        neighbors = inputs[Properties.neighbors]
+        neighbor_mask = inputs[Properties.neighbor_mask]
         # triple property
         neighbors_j = inputs[Properties.neighbor_pairs_j]
         neighbors_k = inputs[Properties.neighbor_pairs_k]
@@ -336,6 +368,10 @@ class SchNetTriple(nn.Module):
             charge = charge[:, None] * self.charge  # B x F
             x = x + charge
 
+        # compute doubl distances of every atom to its neighbors
+        r_double = self.double_ditances(
+            positions, neighbors, cell, cell_offset, neighbor_mask=neighbor_mask
+        )
         # compute tirple distances of every atom to its neighbors
         r_ijk = self.triple_distances(
             positions,
@@ -347,6 +383,7 @@ class SchNetTriple(nn.Module):
             cell_offsets=cell_offset,
         )
         # expand interatomic distances (for example, Gaussian smearing)
+        f_double = self.distance_expansion_double(r_double)
         f_ij = self.distance_expansion_triple(r_ijk[0])
         f_ik = self.distance_expansion_triple(r_ijk[1])
         if self.crossterm:
@@ -361,11 +398,15 @@ class SchNetTriple(nn.Module):
         for interaction in self.interactions:
             v = interaction(
                 x,
+                r_double,
                 r_ijk[0],
                 r_ijk[1],
                 r_ijk[2],
+                neighbors,
+                neighbor_mask,
                 neighbors_j,
                 triple_masks,
+                f_double=f_double,
                 f_ij=f_ij,
                 f_ik=f_ik,
                 f_jk=f_jk,
