@@ -16,8 +16,8 @@ class AngularMapping(nn.Module):
 
     def __init__(self, max_zeta=1, n_zeta=1):
         super(AngularMapping, self).__init__()
-        self.max_zeta = max_zeta
-        self.n_zeta = n_zeta
+        zetas = torch.logspace(0, end=np.log2(max_zeta), steps=n_zeta, base=2)
+        self.register_buffer("zetas", zetas)
 
     def forward(self, r_ij, r_ik, r_jk, triple_masks=None):
         """
@@ -36,16 +36,15 @@ class AngularMapping(nn.Module):
         if triple_masks is not None:
             cos_theta[triple_masks == 0] = 0.0
 
-        zetas = torch.logspace(0, end=np.log2(self.max_zeta), steps=self.n_zeta, base=2)
         # self.register_buffer("zetas", zetas)
 
         angular_pos = [
             2 ** (1 - zeta) * ((1.0 - cos_theta) ** zeta).unsqueeze(-1)
-            for zeta in zetas
+            for zeta in self.zetas
         ]
         angular_neg = [
             2 ** (1 - zeta) * ((1.0 + cos_theta) ** zeta).unsqueeze(-1)
-            for zeta in zetas
+            for zeta in self.zetas
         ]
 
         return torch.cat(angular_pos + angular_neg, -1)
