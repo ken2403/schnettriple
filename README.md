@@ -1,1 +1,1 @@
-# soturon_mymodu
+# SchNetTriple

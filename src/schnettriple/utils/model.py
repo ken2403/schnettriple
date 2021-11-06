@@ -71,7 +71,7 @@ def get_representation(args, train_loader=None):
             max_zeta=args.max_zeta,
             n_zeta=args.n_zeta,
             normalize_filter=args.normalize_filter,
-            crossterm=args.crossterm
+            crossterm=args.crossterm,
         )
 
     else:

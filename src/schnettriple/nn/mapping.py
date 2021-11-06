@@ -3,7 +3,7 @@ import torch
 from torch import nn
 
 
-__all__ = ['AngularMapping', 'TripleMapping']
+__all__ = ["AngularMapping", "TripleMapping"]
 
 
 class AngularMapping(nn.Module):
@@ -14,11 +14,7 @@ class AngularMapping(nn.Module):
 
     """
 
-    def __init__(
-        self,
-        max_zeta=1,
-        n_zeta=1,
-    ):
+    def __init__(self, max_zeta=1, n_zeta=1):
         super(AngularMapping, self).__init__()
         self.max_zeta = max_zeta
         self.n_zeta = n_zeta
@@ -33,18 +29,16 @@ class AngularMapping(nn.Module):
 
         """
         # calculate angular_fetures
-        cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) -
-                     torch.pow(r_jk, 2)) / (2.0 * r_ij * r_ik)
+        cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) - torch.pow(r_jk, 2)) / (
+            2.0 * r_ij * r_ik
+        )
         # Required in order to catch NaNs during backprop
         if triple_masks is not None:
             cos_theta[triple_masks == 0] = 0.0
 
-        zetas = np.logspace(
-            0,
-            stop=np.log2(
-                self.max_zeta),
-            num=self.n_zeta,
-            base=2)
+        zetas = torch.logspace(0, end=np.log2(self.max_zeta), steps=self.n_zeta, base=2)
+        self.register_buffer("zetas", zetas)
+
         angular_pos = [
             2 ** (1 - zeta) * ((1.0 - cos_theta) ** zeta).unsqueeze(-1)
             for zeta in zetas
@@ -74,19 +68,12 @@ class TripleMapping(nn.Module):
 
     """
 
-    def __init__(
-        self,
-        max_zeta=1,
-        n_zeta=1,
-        crossterm=False
-    ):
+    def __init__(self, max_zeta=1, n_zeta=1, crossterm=False):
         super(TripleMapping, self).__init__()
         self.angular_filter = AngularMapping(max_zeta, n_zeta)
         self.crossterm = crossterm
 
-    def forward(
-        self, r_ij, r_ik, r_jk, f_ij, f_ik, f_jk=None, triple_masks=None
-    ):
+    def forward(self, r_ij, r_ik, r_jk, f_ij, f_ik, f_jk=None, triple_masks=None):
         """
         Parameters
         ----------
@@ -104,15 +91,16 @@ class TripleMapping(nn.Module):
         if self.crossterm:
             if f_jk is None:
                 raise TypeError(
-                    "TripleMapping() missing 1 required positional argument: 'f_jk'")
+                    "TripleMapping() missing 1 required positional argument: 'f_jk'"
+                )
             else:
                 radial_mapping *= f_jk
 
         # combnation of angular and radial filter
-        total_mapping = angular_mapping[:, :, :, :,
-                                        None] * radial_mapping[:, :, :, None, :]
+        total_mapping = (
+            angular_mapping[:, :, :, :, None] * radial_mapping[:, :, :, None, :]
+        )
         # reshape (N_batch * N_atom * N_nbh * N_filter_features)
-        total_mapping = total_mapping.reshape(
-            n_batch, n_atoms, n_neighbors, -1)
+        total_mapping = total_mapping.reshape(n_batch, n_atoms, n_neighbors, -1)
 
         return total_mapping

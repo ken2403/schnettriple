@@ -10,7 +10,7 @@ import torch
 import schnetpack as spk
 
 
-__all__ = ['SchNetAnalysis']
+__all__ = ["SchNetAnalysis"]
 
 
 class SchNetAnalysis:
@@ -35,11 +35,10 @@ class SchNetAnalysis:
         self.dbpath = os.path.abspath(dbpath)
         self.triples = triples
 
-        self.available_properties = spk.AtomsData(
-            self.dbpath).available_properties
-        self.plot_fontfamily = 'Arial'
+        self.available_properties = spk.AtomsData(self.dbpath).available_properties
+        self.plot_fontfamily = "Arial"
 
-    def _split_load(self, data='train'):
+    def _split_load(self, data="train"):
         """
         Return a split index from 'split.npz'
 
@@ -54,15 +53,15 @@ class SchNetAnalysis:
                 An array containing the indices of the split data.
 
         """
-        indices = np.load(os.path.join(self.modeldir, 'split.npz'))
-        if data == 'validation':
-            data = 'val'
-        index = '_'.join([data, 'idx'])
+        indices = np.load(os.path.join(self.modeldir, "split.npz"))
+        if data == "validation":
+            data = "val"
+        index = "_".join([data, "idx"])
 
         return indices[index]
 
     @staticmethod
-    def _plot_config(fontfamily='Arial'):
+    def _plot_config(fontfamily="Arial"):
         plt.rcParams["font.family"] = fontfamily
         plt.rcParams["font.size"] = 14
         plt.rcParams["xtick.direction"] = "in"
@@ -77,18 +76,23 @@ class SchNetAnalysis:
         plt.rcParams["ytick.major.width"] = 1.0
         plt.rcParams["xtick.major.size"] = 5
         plt.rcParams["ytick.major.size"] = 5
-        plt.rcParams['xtick.top'] = True
-        plt.rcParams['ytick.right'] = True
+        plt.rcParams["xtick.top"] = True
+        plt.rcParams["ytick.right"] = True
         plt.rcParams["axes.linewidth"] = 1.0
-        plt.rcParams["mathtext.fontset"] = 'cm'
-        plt.rcParams['mathtext.default'] = 'it'
+        plt.rcParams["mathtext.fontset"] = "cm"
+        plt.rcParams["mathtext.default"] = "it"
         plt.rcParams["legend.frameon"] = False
 
         return None
 
     def log_plot(
-            self, error='RMSE', props=('energy', 'forces'),
-            units=('eV', 'eV/\u212B'), axes=None, verbose=True):
+        self,
+        error="RMSE",
+        props=("energy", "forces"),
+        units=("eV", "eV/\u212B"),
+        axes=None,
+        verbose=True,
+    ):
         """
         Plot the progress of the learning on SchNet.
         Generate 3 plots :
@@ -119,50 +123,52 @@ class SchNetAnalysis:
         if axes is None:
             _, axes = plt.subplots(1, 3, figsize=(20, 5))
 
-        df = pd.read_csv(os.path.join(self.modeldir, 'log/log.csv'))
+        df = pd.read_csv(os.path.join(self.modeldir, "log/log.csv"))
 
         # plot loss_epoch curve
-        axes[0].plot(df['Train loss'], color='r', label='Training loss')
-        axes[0].plot(df['Validation loss'], color='g', label='Validation loss')
-        axes[0].legend(loc='best')
-        axes[0].set_xlabel('epoch')
-        axes[0].set_ylabel('loss')
-        axes[0].set_title('Loss')
+        axes[0].plot(df["Train loss"], color="r", label="Training loss")
+        axes[0].plot(df["Validation loss"], color="g", label="Validation loss")
+        axes[0].legend(loc="best")
+        axes[0].set_xlabel("epoch")
+        axes[0].set_ylabel("loss")
+        axes[0].set_title("Loss")
 
         # plot error for prpops[0]
-        error_0 = '_'.join([error, props[0]])
-        axes[1].plot(df[error_0], c='b')
-        axes[1].set_xlabel('epoch')
-        axes[1].set_ylabel(f'{error} ({units[0]})')
-        axes[1].set_title(f'{error} for {props[0]}')
+        error_0 = "_".join([error, props[0]])
+        axes[1].plot(df[error_0], c="b")
+        axes[1].set_xlabel("epoch")
+        axes[1].set_ylabel(f"{error} ({units[0]})")
+        axes[1].set_title(f"{error} for {props[0]}")
 
         # plot error for prpops[1]
-        error_1 = '_'.join([error, props[1]])
-        axes[2].plot(df[error_1], c='orange')
-        axes[2].set_xlabel('epoch')
-        axes[2].set_ylabel(f'{error} ({units[1]})')
-        axes[2].set_title(f'{error} for {props[1]}')
+        error_1 = "_".join([error, props[1]])
+        axes[2].plot(df[error_1], c="orange")
+        axes[2].set_xlabel("epoch")
+        axes[2].set_ylabel(f"{error} ({units[1]})")
+        axes[2].set_title(f"{error} for {props[1]}")
 
         if verbose:
             middle_epoch = len(df) / 2
 
             middle0 = (df[error_0].max() + df[error_0].min()) / 2
             score0 = np.array(df[error_0])[-1]
-            axes[1].text(
-                middle_epoch, middle0,
-                f'score={score0:.3f} ({units[0]})')
+            axes[1].text(middle_epoch, middle0, f"score={score0:.3f} ({units[0]})")
 
             middle1 = (df[error_1].max() + df[error_1].min()) / 2
             score1 = np.array(df[error_1])[-1]
-            axes[2].text(
-                middle_epoch, middle1,
-                f'score={score1:.3f} ({units[1]})')
+            axes[2].text(middle_epoch, middle1, f"score={score1:.3f} ({units[1]})")
 
         return plt
 
     def inout_property(
-            self, prop='energy', data='train', divided_by_atoms=True,
-            device='cpu', save=True, _return=False):
+        self,
+        prop="energy",
+        data="train",
+        divided_by_atoms=True,
+        device="cpu",
+        save=True,
+        _return=False,
+    ):
         """
         Return the atom-by-atom predictions of the system properties
         as an array corresponding to the input values.
@@ -193,27 +199,26 @@ class SchNetAnalysis:
                 Return the input and output values of some property
                 as an two arrays with corresponding each indices.
         """
-        logging.basicConfig(
-            format='%(levelname)s:%(message)s',
-            level=logging.INFO)
+        logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 
         device = torch.device(device)
 
         indexes = self._split_load(data)
 
         bestmodel = torch.load(
-            os.path.join(self.modeldir, 'best_model'),
-            map_location=device)
+            os.path.join(self.modeldir, "best_model"), map_location=device
+        )
 
         logging.info("the calculation starts ...")
         first = True
         for idx in indexes:
             idx = int(idx)
             atom_num, props, preds = self._pred_one_schnet(
-                model=bestmodel, idx=idx, device=device)
+                model=bestmodel, idx=idx, device=device
+            )
             ndim, in_data, out_data = self._make_io_property_data(
-                prop, atom_num, props, preds,
-                divided_by_atoms=divided_by_atoms)
+                prop, atom_num, props, preds, divided_by_atoms=divided_by_atoms
+            )
             if ndim == 1:
                 if first:
                     in_prop = in_data
@@ -240,10 +245,9 @@ class SchNetAnalysis:
         logging.info("the calculation is done!")
 
         if save:
-            dataname = f'io_{prop}_{data}.npz'
+            dataname = f"io_{prop}_{data}.npz"
             savepath = os.path.abspath(os.path.join(self.modeldir, dataname))
-            np.savez(
-                savepath, in_prop=in_prop, out_prop=out_prop)
+            np.savez(savepath, in_prop=in_prop, out_prop=out_prop)
             logging.info(f"data is saved in {self.modeldir}/{dataname}")
 
         if _return:
@@ -251,11 +255,8 @@ class SchNetAnalysis:
         else:
             return None
 
-    def _make_io_property_data(
-            self, prop, atom_num, props, preds, divided_by_atoms):
-        """
-
-        """
+    def _make_io_property_data(self, prop, atom_num, props, preds, divided_by_atoms):
+        """ """
         ndim = props[prop].ndim
         if ndim == 1:
             if divided_by_atoms:
@@ -264,7 +265,8 @@ class SchNetAnalysis:
                     in_data = np.expand_dims(props[prop] / atom_num, axis=0)
                 if not isinstance(props[prop], np.ndarray):
                     in_data = np.expand_dims(
-                        props[prop].cpu().numpy() / atom_num, axis=0)
+                        props[prop].cpu().numpy() / atom_num, axis=0
+                    )
             if not divided_by_atoms:
                 out_data = preds[prop].detach().cpu().numpy()
                 if isinstance(props[prop], np.ndarray):
@@ -313,11 +315,10 @@ class SchNetAnalysis:
                 Dict with predictions values in torch.tensor type.
         """
         dataset = spk.AtomsData(self.dbpath, collect_triples=self.triples)
-        converter = spk.data.AtomsConverter(
-            collect_triples=self.triples, device=device)
+        converter = spk.data.AtomsConverter(collect_triples=self.triples, device=device)
 
         with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
+            warnings.simplefilter("ignore")
             at, props = dataset.get_properties(idx=idx)
             inputs = converter(at)
 
@@ -331,8 +332,14 @@ class SchNetAnalysis:
         return atom_num, props, preds
 
     def inout_plot(
-            self, prop='energy', data=('train', 'validation'), axes=None,
-            line=True, xlabel='DFT energy', unit='eV/atom'):
+        self,
+        prop="energy",
+        data=("train", "validation"),
+        axes=None,
+        line=True,
+        xlabel="DFT energy",
+        unit="eV/atom",
+    ):
         """
         Plot the predictions in learned SchNet for individual inputs.
 
@@ -358,8 +365,9 @@ class SchNetAnalysis:
         data_num = len(data)
         if data_num > 3:
             raise NotImplementedError(
-                'The ``data`` should contain no more than three elements.')
-        colors = ['red', 'navy', 'green']
+                "The ``data`` should contain no more than three elements."
+            )
+        colors = ["red", "navy", "green"]
 
         if axes is None:
             _, ax = plt.subplots(1, 1, figsize=(8, 6))
@@ -367,8 +375,7 @@ class SchNetAnalysis:
         max_x = None
         min_x = None
         for i in range(data_num):
-            filepath = os.path.join(
-                self.modeldir, f'io_{prop}_{data[i]}.npz')
+            filepath = os.path.join(self.modeldir, f"io_{prop}_{data[i]}.npz")
             try:
                 f = np.load(filepath, allow_pickle=True)
             except FileNotFoundError:
@@ -376,13 +383,19 @@ class SchNetAnalysis:
                     """
                     Please do the calculation with the 'inout_prop()'
                     method first, and save the calculation result.
-                    """)
+                    """
+                )
             else:
-                in_prop = f['in_prop']
-                out_prop = f['out_prop']
+                in_prop = f["in_prop"]
+                out_prop = f["out_prop"]
                 ax.scatter(
-                    in_prop, out_prop, s=4, c=colors[i],
-                    alpha=1.1 - (i + 1) / 5, label=data[i])
+                    in_prop,
+                    out_prop,
+                    s=4,
+                    c=colors[i],
+                    alpha=1.1 - (i + 1) / 5,
+                    label=data[i],
+                )
 
                 if max_x is None:
                     max_x = in_prop.max()
@@ -403,35 +416,28 @@ class SchNetAnalysis:
 
         # set the axis ticks
         min_tick = float(
-            Decimal(min_lim).quantize(
-                Decimal('.1'),
-                rounding=ROUND_CEILING))
-        max_tick = float(
-            Decimal(max_lim).quantize(
-                Decimal('.1'),
-                rounding=ROUND_FLOOR))
+            Decimal(min_lim).quantize(Decimal(".1"), rounding=ROUND_CEILING)
+        )
+        max_tick = float(Decimal(max_lim).quantize(Decimal(".1"), rounding=ROUND_FLOOR))
         tick_step = float(
-            Decimal(
-                data_length /
-                5).quantize(
-                Decimal('.1'),
-                rounding=ROUND_HALF_UP))
+            Decimal(data_length / 5).quantize(Decimal(".1"), rounding=ROUND_HALF_UP)
+        )
         ax.set_xticks(np.arange(min_tick, max_tick, tick_step))
         ax.set_yticks(np.arange(min_tick, max_tick, tick_step))
 
         # set the axis label
-        ax.set_xlabel(f'{xlabel} ({unit})')
-        ax.set_ylabel(f'SchNet {prop} ({unit})')
-        ax.legend(loc='best')
+        ax.set_xlabel(f"{xlabel} ({unit})")
+        ax.set_ylabel(f"SchNet {prop} ({unit})")
+        ax.legend(loc="best")
 
         if line:
-            ax.plot([min_lim, max_lim], [min_lim, max_lim], '--', c='gray')
+            ax.plot([min_lim, max_lim], [min_lim, max_lim], "--", c="gray")
 
-        plt.gca().set_aspect('equal', 'box')
+        plt.gca().set_aspect("equal", "box")
 
         return plt
 
-    def rmse(self, prop='energy', data='train', save=True):
+    def rmse(self, prop="energy", data="train", save=True):
         """
         Calculate the rmse from 'io_{data}_{prop}.npz' file.
 
@@ -449,8 +455,7 @@ class SchNetAnalysis:
         -------
             rmse : np.float
         """
-        filepath = os.path.join(
-            self.modeldir, f'io_{prop}_{data}.npz')
+        filepath = os.path.join(self.modeldir, f"io_{prop}_{data}.npz")
         try:
             f = np.load(filepath, allow_pickle=True)
         except FileNotFoundError:
@@ -458,10 +463,11 @@ class SchNetAnalysis:
                 """
                 Please do the calculation with the 'inout_prop()' method first,
                 and save the calculation result (set 'save=True').
-                """)
+                """
+            )
         else:
-            y_true = f['in_prop']
-            y_pred = f['out_prop']
+            y_true = f["in_prop"]
+            y_pred = f["out_prop"]
             rmse = 0
             for true, pred in zip(y_true, y_pred):
                 rmse += mean_squared_error(true, pred)
@@ -469,9 +475,9 @@ class SchNetAnalysis:
             rmse = np.sqrt(rmse)
 
         if save:
-            filename = f'rmse_{prop}_{data}.txt'
+            filename = f"rmse_{prop}_{data}.txt"
             filepath = os.path.join(self.modeldir, filename)
-            with open(filepath, 'w', encoding='utf-8') as f:
-                print('RMSE\n', f'{rmse}', file=f)
+            with open(filepath, "w", encoding="utf-8") as f:
+                print("RMSE\n", f"{rmse}", file=f)
 
         return rmse

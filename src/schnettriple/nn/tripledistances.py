@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 
-__all__ = ['TriplesDistances']
+__all__ = ["TriplesDistances"]
 
 
 def triple_distances(
@@ -12,7 +12,7 @@ def triple_distances(
     offset_idx_j=None,
     offset_idx_k=None,
     cell=None,
-    cell_offsets=None
+    cell_offsets=None,
 ):
     """
     Get all distances between atoms forming a triangle with the central atoms.
@@ -103,12 +103,19 @@ class TriplesDistances(nn.Module):
     Layer that gets all distances between atoms forming a triangle with the
     central atoms. Required e.g. for angular symmetry functions.
     """
+
     def __init__(self):
         super(TriplesDistances, self).__init__()
 
     def forward(
-        self, positions, neighbors_j, neighbors_k,
-        offset_idx_j=None, offset_idx_k=None, cell=None, cell_offsets=None
+        self,
+        positions,
+        neighbors_j,
+        neighbors_k,
+        offset_idx_j=None,
+        offset_idx_k=None,
+        cell=None,
+        cell_offsets=None,
     ):
         """
         Parameters
@@ -138,4 +145,12 @@ class TriplesDistances(nn.Module):
                 Distance between neighbors
 
         """
-        return triple_distances(positions, neighbors_j, neighbors_k, offset_idx_j, offset_idx_k, cell, cell_offsets)
+        return triple_distances(
+            positions,
+            neighbors_j,
+            neighbors_k,
+            offset_idx_j,
+            offset_idx_k,
+            cell,
+            cell_offsets,
+        )

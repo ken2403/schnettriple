@@ -6,7 +6,7 @@ from schnetpack.nn.base import Aggregate
 from schnettriple.nn.mapping import TripleMapping
 
 
-__all__ = ['CFConvTriple']
+__all__ = ["CFConvTriple"]
 
 
 class CFConvTriple(nn.Module):
@@ -42,6 +42,7 @@ class CFConvTriple(nn.Module):
             axis over which convolution should be applied.
 
     """
+
     def __init__(
         self,
         n_in,
@@ -58,8 +59,8 @@ class CFConvTriple(nn.Module):
         axis=2,
     ):
         super(CFConvTriple, self).__init__()
-        self.in2f = Dense(n_in, n_filters*2, bias=False, activation=None)
-        self.f2out = Dense(n_filters*2, n_out, bias=True, activation=activation)
+        self.in2f = Dense(n_in, n_filters, bias=False, activation=None)
+        self.f2out = Dense(n_filters, n_out, bias=True, activation=activation)
         self.triple_mapping = TripleMapping(
             max_zeta=max_zeta, n_zeta=n_zeta, crossterm=crossterm
         )
@@ -70,8 +71,20 @@ class CFConvTriple(nn.Module):
         self.agg = Aggregate(axis=axis, mean=normalize_filter)
 
     def forward(
-        self, x, r_ij, r_ik, r_jk, neighbors_j, triple_masks,
-        f_ij=None, f_ik=None, f_jk=None
+        self,
+        x,
+        r_double,
+        r_ij,
+        r_ik,
+        r_jk,
+        neighbors,
+        neighbor_mask,
+        neighbors_j,
+        triple_masks,
+        f_double=None,
+        f_ij=None,
+        f_ik=None,
+        f_jk=None,
     ):
         """
         Compute convolution block.
@@ -81,6 +94,8 @@ class CFConvTriple(nn.Module):
             x : torch.Tensor
                 input representation/embedding of atomic environments
                 with (N_b, N_a, n_in) shape.
+            r_double :
+
             r_ij: torch.Tensor
                 interatomic distances from the centered atom i
                 to the neighbor atom j of (N_b, N_a, N_nbh) shape.
@@ -90,11 +105,17 @@ class CFConvTriple(nn.Module):
             r_jk: torch.Tensor, optional, default=None
                 interatomic distances from the neighbor atom j
                 to the neighbor atom k of (N_b, N_a, N_nbh) shape.
+            neighbors :
+
+            neighbor_mask :
+
             neighbors_j : torch.Tensor
                 of (N_b, N_a, N_nbh) shape.
             triple_masks : torch.Tensor
                 mask to filter out non-existing neighbors
                 introduced via padding.
+            f_double :
+
             f_ij: torch.Tensor, optional, default=None
                 expanded interatomic distances in a basis.
                 If None, r_ij.unsqueeze(-1) is used.
@@ -111,6 +132,8 @@ class CFConvTriple(nn.Module):
                 block output with (N_batch, N_atoms, N_out) shape.
 
         """
+        if f_double is None:
+            f_double = r_double.unsqueeze(-1)
         if f_ij is None:
             f_ij = r_ij.unsqueeze(-1)
         if f_ik is None:
@@ -120,11 +143,11 @@ class CFConvTriple(nn.Module):
                 f_jk = r_jk.unsqueeze(-1)
 
         # pass expanded interactomic distances through filter block (double)
-        W_ij_double = self.filter_network_double(f_ij)
+        W_double = self.filter_network_double(f_double)
         # apply cutoff
         if self.cutoff_network is not None:
-            C_ij = self.cutoff_network(r_ij)
-            W_ij_double = W_ij_double * C_ij.unsqueeze(-1)
+            C_double = self.cutoff_network(r_double)
+            W_double = W_double * C_double.unsqueeze(-1)
 
         # calculate triple mapping
         m_ijk = self.triple_mapping(r_ij, r_ik, r_jk, f_ij, f_ik, f_jk, triple_masks)
@@ -132,16 +155,26 @@ class CFConvTriple(nn.Module):
         W_ijk = self.filter_network_triple(m_ijk)
         # apply cutoff
         if self.cutoff_network is not None:
+            C_ij = self.cutoff_network(r_ij)
             C_ik = self.cutoff_network(r_ik)
             W_ijk = W_ijk * C_ij.unsqueeze(-1) * C_ik.unsqueeze(-1)
             if self.crossterm:
                 C_jk = self.cutoff_network(r_jk)
                 W_ijk *= C_jk.unsqueeze(-1)
-        # concatinate double and triple filters
-        W_total = torch.cat((W_ij_double, W_ijk), -1)
 
         # pass initial embeddings through Dense layer
         y = self.in2f(x)
+
+        # reshape y for element-wise multiplication by W
+        nbh_size = neighbors.size()
+        nbh = neighbors.reshape(-1, nbh_size[1] * nbh_size[2], 1)
+        nbh = nbh.expand(-1, -1, y.size(2))
+        y = torch.gather(y, 1, nbh)
+        y = y.view(nbh_size[0], nbh_size[1], nbh_size[2], -1)
+
+        # element-wise multiplication, aggregating and Dense layer
+        y = y * W_double
+        y = self.agg(y, neighbor_mask)
 
         # reshape y for element-wise multiplication by W
         nbh_size = neighbors_j.size()
@@ -151,8 +184,10 @@ class CFConvTriple(nn.Module):
         y = y.view(nbh_size[0], nbh_size[1], nbh_size[2], -1)
 
         # element-wise multiplication, aggregating and Dense layer
-        y = y * W_total
+        y = y * W_ijk
         y = self.agg(y, triple_masks)
+
+        # output embbedings through Dense layer
         y = self.f2out(y)
 
         return y
