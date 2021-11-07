@@ -16,8 +16,8 @@ class ThetaDistribution(nn.Module):
 
     def __init__(self, max_zeta=1, n_zeta=1):
         super(ThetaDistribution, self).__init__()
-        zetas = torch.logspace(0, end=np.log2(max_zeta), steps=n_zeta, base=2)
-        self.register_buffer("zetas", zetas)
+        self.zetas = np.logspace(0, stop=np.log2(max_zeta), num=n_zeta, base=2)
+        # self.register_buffer("zetas", zetas)
 
     def forward(self, r_ij, r_ik, r_jk, triple_masks=None):
         """
@@ -36,8 +36,6 @@ class ThetaDistribution(nn.Module):
         if triple_masks is not None:
             cos_theta[triple_masks == 0] = 0.0
 
-        # self.register_buffer("zetas", zetas)
-
         angular_pos = [
             2 ** (1 - zeta) * ((1.0 - cos_theta) ** zeta).unsqueeze(-1)
             for zeta in self.zetas
@@ -46,8 +44,11 @@ class ThetaDistribution(nn.Module):
             2 ** (1 - zeta) * ((1.0 + cos_theta) ** zeta).unsqueeze(-1)
             for zeta in self.zetas
         ]
+        ang_total = torch.cat(angular_pos + angular_neg, -1)
+        if triple_masks is not None:
+            ang_total[triple_masks == 0] = 0.0
 
-        return torch.cat(angular_pos + angular_neg, -1)
+        return ang_total
 
 
 class TripleDistribution(nn.Module):
