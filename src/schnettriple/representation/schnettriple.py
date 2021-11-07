@@ -95,6 +95,7 @@ class SchNetInteractionTriple(nn.Module):
         neighbors,
         neighbor_mask,
         neighbors_j,
+        neighbors_k,
         triple_masks,
         d_ijk,
         f_double=None,
@@ -121,6 +122,8 @@ class SchNetInteractionTriple(nn.Module):
 
             neighbors_j : torch.Tensor
                 of (N_b, N_a, N_nbh) shape.
+            neighbors_k : torch.Tensor
+                of (N_b, N_a, N_nbh) shape.
             triple_masks : torch.Tensor
                 mask to filter out non-existing neighbors
                 introduced via padding.
@@ -145,6 +148,7 @@ class SchNetInteractionTriple(nn.Module):
             neighbors,
             neighbor_mask,
             neighbors_j,
+            neighbors_k,
             triple_masks,
             d_ijk,
             f_double,
@@ -353,9 +357,9 @@ class SchNetTriple(nn.Module):
             x = x + charge
 
         # compute doubl distances of every atom to its neighbors
-        r_double = self.double_ditances(
-            positions, neighbors, cell, cell_offset, neighbor_mask=neighbor_mask
-        )
+        # r_double = self.double_ditances(
+        #     positions, neighbors, cell, cell_offset, neighbor_mask=neighbor_mask
+        # )
         # compute tirple distances of every atom to its neighbors
         r_ijk = self.triple_distances(
             positions,
@@ -367,7 +371,7 @@ class SchNetTriple(nn.Module):
             cell_offsets=cell_offset,
         )
         # expand interatomic distances (for example, Gaussian smearing)
-        f_double = self.distance_expansion_double(r_double)
+        f_double = self.distance_expansion_double(r_ijk[0])
         f_ij = self.distance_expansion_triple(r_ijk[0])
         f_ik = self.distance_expansion_triple(r_ijk[1])
         if self.crossterm:
@@ -378,7 +382,7 @@ class SchNetTriple(nn.Module):
         d_ijk = self.triple_distribution(
             r_ijk[0], r_ijk[1], r_ijk[2], f_ij, f_ik, f_jk, triple_masks
         )
-        d_ijk += r_ijk[0].unsqueeze(-1) + r_ijk[1].unsqueeze(-1)
+        # d_ijk += r_ijk[0].unsqueeze(-1) + r_ijk[1].unsqueeze(-1)
 
         # store intermediate representations
         if self.return_intermediate:
@@ -387,13 +391,14 @@ class SchNetTriple(nn.Module):
         for interaction in self.interactions:
             v = interaction(
                 x,
-                r_double,
+                r_ijk[0],
                 r_ijk[0],
                 r_ijk[1],
                 r_ijk[2],
-                neighbors,
-                neighbor_mask,
                 neighbors_j,
+                triple_masks,
+                neighbors_j,
+                neighbors_k,
                 triple_masks,
                 d_ijk=d_ijk,
                 f_double=f_double,

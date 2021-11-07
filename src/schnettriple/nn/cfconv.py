@@ -69,6 +69,7 @@ class CFConvTriple(nn.Module):
         neighbors,
         neighbor_mask,
         neighbors_j,
+        neighbors_k,
         triple_masks,
         d_ijk,
         f_double=None,
@@ -94,6 +95,8 @@ class CFConvTriple(nn.Module):
             neighbor_mask :
 
             neighbors_j : torch.Tensor
+                of (N_b, N_a, N_nbh) shape.
+            neighbors_k : torch.Tensor
                 of (N_b, N_a, N_nbh) shape.
             triple_masks : torch.Tensor
                 mask to filter out non-existing neighbors
@@ -145,11 +148,16 @@ class CFConvTriple(nn.Module):
         y = self.agg(y, neighbor_mask)
 
         # reshape y for element-wise multiplication by W
-        nbh_size = neighbors_j.size()
-        nbh = neighbors_j.reshape(-1, nbh_size[1] * nbh_size[2], 1)
-        nbh = nbh.expand(-1, -1, y.size(2))
-        y = torch.gather(y, 1, nbh)
-        y = y.view(nbh_size[0], nbh_size[1], nbh_size[2], -1)
+        nbh_j_size = neighbors_j.size()
+        nbh_j = neighbors_j.reshape(-1, nbh_j_size[1] * nbh_j_size[2], 1)
+        nbh_j = nbh_j.expand(-1, -1, y.size(2))
+        nbh_k_size = neighbors_k.size()
+        nbh_k = neighbors_k.reshape(-1, nbh_k_size[1] * nbh_k_size[2], 1)
+        nbh_k = nbh_k.expand(-1, -1, y.size(2))
+        y_j = torch.gather(y, 1, nbh_j)
+        y_k = torch.gather(y, 1, nbh_k)
+        y = y_j + y_k
+        y = y.view(nbh_j_size[0], nbh_j_size[1], nbh_j_size[2], -1)
 
         # element-wise multiplication, aggregating and Dense layer
         y = y * W_triple

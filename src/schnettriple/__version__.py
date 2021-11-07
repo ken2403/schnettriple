@@ -1,4 +1,4 @@
-__version_info__ = (0, 2, 2)
+__version_info__ = (0, 3, 0)
 """
 (0.1.5)
 - 3体のfilterをconcatinateせずに、2体のfileterと別々にconvolutionする
@@ -10,5 +10,8 @@ __version_info__ = (0, 2, 2)
 - mappingをangularに名前を変え、CFconvではなく、SchNetTripleのなかで行うように変更(勾配が消失してしまう)
 (0.2.2)
 - cos_thetaの計算を外に出す
+(0.3.0)
+- positionの入力を一個にするために、r_doubleをr_ijk[0]で代用
+- neighbors_k の効果を足し算して追加
 """
 __version__ = ".".join(map(str, __version_info__))
