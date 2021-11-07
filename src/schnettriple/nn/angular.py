@@ -3,10 +3,10 @@ import torch
 from torch import nn
 
 
-__all__ = ["AngularMapping", "TripleMapping"]
+__all__ = ["ThetaDistribution", "TripleDistribution"]
 
 
-class AngularMapping(nn.Module):
+class ThetaDistribution(nn.Module):
     """
 
     Attributes
@@ -15,10 +15,9 @@ class AngularMapping(nn.Module):
     """
 
     def __init__(self, max_zeta=1, n_zeta=1):
-        super(AngularMapping, self).__init__()
+        super(ThetaDistribution, self).__init__()
         zetas = torch.logspace(0, end=np.log2(max_zeta), steps=n_zeta, base=2)
-        self.zetas = nn.Parameter(zetas)
-        # self.register_buffer("zetas", zetas)
+        self.register_buffer("zetas", zetas)
 
     def forward(self, r_ij, r_ik, r_jk, triple_masks=None):
         """
@@ -51,7 +50,7 @@ class AngularMapping(nn.Module):
         return torch.cat(angular_pos + angular_neg, -1)
 
 
-class TripleMapping(nn.Module):
+class TripleDistribution(nn.Module):
     """
     入力：距離(N_b*N_atom*N_nbh)とGaussianSmearing (N_b*N_atom*N_nbh*N_gauss)
     出力：triple filter(カットオフ適用前、doubleのカットオフ適用前と同じところまで)　(N_b*N_atom*N_nbh*N_filter)
@@ -69,8 +68,8 @@ class TripleMapping(nn.Module):
     """
 
     def __init__(self, max_zeta=1, n_zeta=1, crossterm=False):
-        super(TripleMapping, self).__init__()
-        self.angular_filter = AngularMapping(max_zeta, n_zeta)
+        super(TripleDistribution, self).__init__()
+        self.theta_filter = ThetaDistribution(max_zeta, n_zeta)
         self.crossterm = crossterm
 
     def forward(self, r_ij, r_ik, r_jk, f_ij, f_ik, f_jk=None, triple_masks=None):
@@ -83,24 +82,26 @@ class TripleMapping(nn.Module):
 
         """
         n_batch, n_atoms, n_neighbors = r_ij.size()
-        # calculate angular_filter
-        angular_mapping = self.angular_filter(r_ij, r_ik, r_jk, triple_masks)
+        # calculate theta_filter
+        angular_filter = self.theta_filter(r_ij, r_ik, r_jk, triple_masks)
 
-        # calculate radial_mapping
-        radial_mapping = f_ij * f_ik
+        # calculate radial_filter
+        radial_filter = f_ij * f_ik
         if self.crossterm:
             if f_jk is None:
                 raise TypeError(
                     "TripleMapping() missing 1 required positional argument: 'f_jk'"
                 )
             else:
-                radial_mapping *= f_jk
+                radial_filter *= f_jk
 
         # combnation of angular and radial filter
-        total_mapping = (
-            angular_mapping[:, :, :, :, None] * radial_mapping[:, :, :, None, :]
+        triple_ditribution = (
+            angular_filter[:, :, :, :, None] * radial_filter[:, :, :, None, :]
         )
         # reshape (N_batch * N_atom * N_nbh * N_filter_features)
-        total_mapping = total_mapping.reshape(n_batch, n_atoms, n_neighbors, -1)
+        triple_ditribution = triple_ditribution.reshape(
+            n_batch, n_atoms, n_neighbors, -1
+        )
 
-        return total_mapping
+        return triple_ditribution

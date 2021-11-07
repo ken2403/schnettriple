@@ -9,8 +9,9 @@ from schnetpack.nn.acsf import GaussianSmearing
 from schnetpack.nn.activations import shifted_softplus
 from schnetpack.nn.neighbors import AtomDistances
 
-from schnettriple.nn.tripledistances import TriplesDistances
+from schnettriple.nn.neighbors import TriplesDistances
 from schnettriple.nn.cfconv import CFConvTriple
+from schnettriple.nn.angular import TripleDistribution
 
 
 __all__ = ["SchNetInteractionTriple", "SchNetTriple"]
@@ -29,21 +30,19 @@ class SchNetInteractionTriple(nn.Module):
             number of features to describe atomic environments.
         n_spatial_basis : int
             number of input features of filter-generating networks.
-        n_filters : int
-            number of filters used in continuous-filter convolution.
-        max_zeta : int
-
         n_zeta : int
 
+        n_filters : int
+            number of filters used in continuous-filter convolution.
         cutoff : float
             cutoff radius.
         cutoff_network : nn.Module, optional, default=schnetpack.nn.CosineCutoff
             cutoff layer.
+        croossterm : bool
+
         normalize_filter : bool, optional, default=False
             if True, divide aggregated filter by number
             of neighbors over which convolution is applied.
-        crossterm : bool, default=False
-            if True,
 
     """
 
@@ -51,9 +50,8 @@ class SchNetInteractionTriple(nn.Module):
         self,
         n_atom_basis,
         n_spatial_basis,
-        n_filters,
-        max_zeta,
         n_zeta,
+        n_filters,
         cutoff,
         cutoff_network=CosineCutoff,
         crossterm=False,
@@ -77,14 +75,12 @@ class SchNetInteractionTriple(nn.Module):
             n_atom_basis,
             n_filters,
             n_atom_basis,
-            max_zeta,
-            n_zeta,
             self.filter_network_double,
             self.filter_network_triple,
             cutoff_network=self.cutoff_network,
             activation=shifted_softplus,
-            crossterm=crossterm,
             normalize_filter=normalize_filter,
+            crossterm=crossterm,
         )
         # dense layer
         self.dense = Dense(n_atom_basis, n_atom_basis, bias=True, activation=None)
@@ -100,10 +96,8 @@ class SchNetInteractionTriple(nn.Module):
         neighbor_mask,
         neighbors_j,
         triple_masks,
+        d_ijk,
         f_double=None,
-        f_ij=None,
-        f_ik=None,
-        f_jk=None,
     ):
         """
         Compute interaction output.
@@ -115,15 +109,12 @@ class SchNetInteractionTriple(nn.Module):
                 with (N_b, N_a, n_atom_basis) shape.
             r_double : torch.tensor
 
-            r_ij : torch.Tensor
-                interatomic distances from the centered atom i
-                to the neighbor atom j of (N_b, N_a, N_nbh) shape.
-            r_ik : torch.Tensor
-                interatomic distances from the centered atom i
-                to the neighbor atom k of (N_b, N_a, N_nbh) shape.
-            r_jk : torch.Tensor, optional, default=None
-                interatomic distances from the neighbor atom j
-                to the neighbor atom k of (N_b, N_a, N_nbh) shape.
+            r_ij : torch.tensor
+
+            r_ik : torch.tensor
+
+            r_jk : torch.tensor
+
             neighbors :
 
             neighbor_mask :
@@ -133,17 +124,9 @@ class SchNetInteractionTriple(nn.Module):
             triple_masks : torch.Tensor
                 mask to filter out non-existing neighbors
                 introduced via padding.
-            f_double : torch.Tensor
+            d_ijk : torch.tensor
 
-            f_ij : torch.Tensor, optional, default=None
-                expanded interatomic distances in a basis.
-                If None, r_ij_triple.unsqueeze(-1) is used.
-            f_ik : torch.Tensor, optional, default=None
-                expanded interatomic distances in a basis.
-                If None, r_ik_triple.unsqueeze(-1) is used.
-            f_jk : torch.Tensor, optional, default=None
-                expanded interatomic distances in a basis.
-                If None, r_jk_triple.unsqueeze(-1) is used.
+            f_double : torch.Tensor
 
         Returns
         -------
@@ -163,10 +146,8 @@ class SchNetInteractionTriple(nn.Module):
             neighbor_mask,
             neighbors_j,
             triple_masks,
+            d_ijk,
             f_double,
-            f_ij,
-            f_ik,
-            f_jk,
         )
         v = self.dense(v)
 
@@ -281,6 +262,11 @@ class SchNetTriple(nn.Module):
         else:
             self.distance_expansion_triple = distance_expansion_triple
 
+        # layer for extracting triple features
+        self.triple_distribution = TripleDistribution(
+            max_zeta=max_zeta, n_zeta=n_zeta, crossterm=crossterm
+        )
+
         # block for computing interaction
         if coupled_interactions:
             # use the same SchNetInteraction instance (hence the same weights)
@@ -289,13 +275,12 @@ class SchNetTriple(nn.Module):
                     SchNetInteractionTriple(
                         n_atom_basis=n_atom_basis,
                         n_spatial_basis=n_gaussians,
-                        n_filters=n_filters,
-                        max_zeta=max_zeta,
                         n_zeta=n_zeta,
+                        n_filters=n_filters,
                         cutoff=cutoff,
                         cutoff_network=cutoff_network,
-                        crossterm=self.crossterm,
                         normalize_filter=normalize_filter,
+                        crossterm=crossterm,
                     )
                 ]
                 * n_interactions
@@ -307,13 +292,12 @@ class SchNetTriple(nn.Module):
                     SchNetInteractionTriple(
                         n_atom_basis=n_atom_basis,
                         n_spatial_basis=n_gaussians,
-                        n_filters=n_filters,
-                        max_zeta=max_zeta,
                         n_zeta=n_zeta,
+                        n_filters=n_filters,
                         cutoff=cutoff,
                         cutoff_network=cutoff_network,
-                        crossterm=self.crossterm,
                         normalize_filter=normalize_filter,
+                        crossterm=crossterm,
                     )
                     for _ in range(n_interactions)
                 ]
@@ -390,6 +374,10 @@ class SchNetTriple(nn.Module):
             f_jk = self.distance_expansion_triple(r_ijk[2])
         else:
             f_jk = None
+        # extract angular features
+        d_ijk = self.triple_distribution(
+            r_ijk[0], r_ijk[1], r_ijk[2], f_ij, f_ik, f_jk, triple_masks
+        )
 
         # store intermediate representations
         if self.return_intermediate:
@@ -406,10 +394,8 @@ class SchNetTriple(nn.Module):
                 neighbor_mask,
                 neighbors_j,
                 triple_masks,
+                d_ijk=d_ijk,
                 f_double=f_double,
-                f_ij=f_ij,
-                f_ik=f_ik,
-                f_jk=f_jk,
             )
             x = x + v
             if self.return_intermediate:
