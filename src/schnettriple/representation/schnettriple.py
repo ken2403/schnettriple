@@ -378,6 +378,7 @@ class SchNetTriple(nn.Module):
         d_ijk = self.triple_distribution(
             r_ijk[0], r_ijk[1], r_ijk[2], f_ij, f_ik, f_jk, triple_masks
         )
+        d_ijk += r_ijk[0] + r_ijk[1]
 
         # store intermediate representations
         if self.return_intermediate:
