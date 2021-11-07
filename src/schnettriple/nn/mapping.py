@@ -17,7 +17,8 @@ class AngularMapping(nn.Module):
     def __init__(self, max_zeta=1, n_zeta=1):
         super(AngularMapping, self).__init__()
         zetas = torch.logspace(0, end=np.log2(max_zeta), steps=n_zeta, base=2)
-        self.register_buffer("zetas", zetas)
+        self.zetas = nn.Parameter(zetas)
+        # self.register_buffer("zetas", zetas)
 
     def forward(self, r_ij, r_ik, r_jk, triple_masks=None):
         """
