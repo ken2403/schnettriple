@@ -19,7 +19,7 @@ class ThetaDistribution(nn.Module):
         self.zetas = np.logspace(0, stop=np.log2(max_zeta), num=n_zeta, base=2)
         # self.register_buffer("zetas", zetas)
 
-    def forward(self, r_ij, r_ik, r_jk, triple_masks=None):
+    def forward(self, cos_theta, triple_masks=None):
         """
         Parameters
         ----------
@@ -28,14 +28,13 @@ class ThetaDistribution(nn.Module):
         -------
 
         """
-        # calculate angular_fetures
-        cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) - torch.pow(r_jk, 2)) / (
-            2.0 * r_ij * r_ik
-        )
-        # Required in order to catch NaNs during backprop
-        if triple_masks is not None:
-            cos_theta[triple_masks == 0] = 0.0
-
+        # # calculate angular_fetures
+        # cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) - torch.pow(r_jk, 2)) / (
+        #     2.0 * r_ij * r_ik
+        # )
+        # # Required in order to catch NaNs during backprop
+        # if triple_masks is not None:
+        #     cos_theta[triple_masks == 0] = 0.0
         angular_pos = [
             2 ** (1 - zeta) * ((1.0 - cos_theta) ** zeta).unsqueeze(-1)
             for zeta in self.zetas
@@ -45,8 +44,6 @@ class ThetaDistribution(nn.Module):
             for zeta in self.zetas
         ]
         ang_total = torch.cat(angular_pos + angular_neg, -1)
-        if triple_masks is not None:
-            ang_total[triple_masks == 0] = 0.0
 
         return ang_total
 
@@ -83,9 +80,6 @@ class TripleDistribution(nn.Module):
 
         """
         n_batch, n_atoms, n_neighbors = r_ij.size()
-        # calculate theta_filter
-        angular_filter = self.theta_filter(r_ij, r_ik, r_jk, triple_masks)
-
         # calculate radial_filter
         radial_filter = f_ij * f_ik
         if self.crossterm:
@@ -95,6 +89,18 @@ class TripleDistribution(nn.Module):
                 )
             else:
                 radial_filter *= f_jk
+
+        # calculate theta_filter
+        cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) - torch.pow(r_jk, 2)) / (
+            2.0 * r_ij * r_ik
+        )
+        if triple_masks is not None:
+            cos_theta[triple_masks == 0] = 0.0
+        angular_filter = self.theta_filter(cos_theta)
+
+        if triple_masks is not None:
+            radial_filter[triple_masks == 0] = 0.0
+            angular_filter[triple_masks == 0] = 0.0
 
         # combnation of angular and radial filter
         triple_ditribution = (

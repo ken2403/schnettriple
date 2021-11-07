@@ -1,4 +1,4 @@
-__version_info__ = (0, 2, 1)
+__version_info__ = (0, 2, 2)
 """
 (0.1.5)
 - 3体のfilterをconcatinateせずに、2体のfileterと別々にconvolutionする
@@ -8,5 +8,7 @@ __version_info__ = (0, 2, 1)
 - zetaをregister_bufferに入れる
 (0.2.0)
 - mappingをangularに名前を変え、CFconvではなく、SchNetTripleのなかで行うように変更(勾配が消失してしまう)
+(0.2.2)
+- cos_thetaの計算を外に出す
 """
 __version__ = ".".join(map(str, __version_info__))
