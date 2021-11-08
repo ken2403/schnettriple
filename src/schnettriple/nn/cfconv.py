@@ -123,11 +123,9 @@ class CFConvTriple(nn.Module):
             W_double = W_double * C_double.unsqueeze(-1)
 
         # pass triple distribution through filter block (triple)
-        # W_triple = self.filter_network_triple(d_ijk)
-        W_triple = torch.rand(
-            r_ij.size()[0], r_ij.size()[1], r_ij.size()[2], W_double.size()[3]
-        )
-        W_triple.to("cuda" if torch.cuda.is_available() else "cpu")
+        d_ijk = torch.rand_like(d_ijk)
+        W_triple = self.filter_network_triple(d_ijk)
+
         # apply cutoff
         if self.cutoff_network is not None:
             C_ij = self.cutoff_network(r_ij)
