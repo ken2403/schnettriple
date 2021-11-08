@@ -123,7 +123,9 @@ class CFConvTriple(nn.Module):
             W_double = W_double * C_double.unsqueeze(-1)
 
         # pass triple distribution through filter block (triple)
-        W_triple = self.filter_network_triple(d_ijk)
+        # W_triple = self.filter_network_triple(d_ijk)
+        f_double = torch.cat((f_double, f_double), -1)
+        W_triple = self.filter_network_triple(f_double)
         # apply cutoff
         if self.cutoff_network is not None:
             C_ij = self.cutoff_network(r_ij)
@@ -151,11 +153,10 @@ class CFConvTriple(nn.Module):
         nbh_j_size = neighbors_j.size()
         nbh_j = neighbors_j.reshape(-1, nbh_j_size[1] * nbh_j_size[2], 1)
         nbh_j = nbh_j.expand(-1, -1, y.size(2))
-        # nbh_k_size = neighbors_k.size()
-        # nbh_k = neighbors_k.reshape(-1, nbh_k_size[1] * nbh_k_size[2], 1)
-        # nbh_k = nbh_k.expand(-1, -1, y.size(2))
-        # y = torch.gather(y, 1, nbh_j) + torch.gather(y, 1, nbh_k)
-        y = torch.gather(y, 1, nbh_j)
+        nbh_k_size = neighbors_k.size()
+        nbh_k = neighbors_k.reshape(-1, nbh_k_size[1] * nbh_k_size[2], 1)
+        nbh_k = nbh_k.expand(-1, -1, y.size(2))
+        y = torch.gather(y, 1, nbh_j) + torch.gather(y, 1, nbh_k)
         y = y.view(nbh_j_size[0], nbh_j_size[1], nbh_j_size[2], -1)
 
         # element-wise multiplication, aggregating and Dense layer
