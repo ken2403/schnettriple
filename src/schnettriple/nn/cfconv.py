@@ -147,19 +147,20 @@ class CFConvTriple(nn.Module):
         y = y * W_double
         y = self.agg(y, neighbor_mask)
 
-        # # reshape y for element-wise multiplication by W
-        # nbh_j_size = neighbors_j.size()
-        # nbh_j = neighbors_j.reshape(-1, nbh_j_size[1] * nbh_j_size[2], 1)
-        # nbh_j = nbh_j.expand(-1, -1, y.size(2))
+        # reshape y for element-wise multiplication by W
+        nbh_j_size = neighbors_j.size()
+        nbh_j = neighbors_j.reshape(-1, nbh_j_size[1] * nbh_j_size[2], 1)
+        nbh_j = nbh_j.expand(-1, -1, y.size(2))
         # nbh_k_size = neighbors_k.size()
         # nbh_k = neighbors_k.reshape(-1, nbh_k_size[1] * nbh_k_size[2], 1)
         # nbh_k = nbh_k.expand(-1, -1, y.size(2))
         # y = torch.gather(y, 1, nbh_j) + torch.gather(y, 1, nbh_k)
-        # y = y.view(nbh_j_size[0], nbh_j_size[1], nbh_j_size[2], -1)
+        y = torch.gather(y, 1, nbh_j)
+        y = y.view(nbh_j_size[0], nbh_j_size[1], nbh_j_size[2], -1)
 
-        # # element-wise multiplication, aggregating and Dense layer
-        # y = y * W_triple
-        # y = self.agg(y, triple_masks)
+        # element-wise multiplication, aggregating and Dense layer
+        y = y * W_triple
+        y = self.agg(y, triple_masks)
 
         # output embbedings through Dense layer
         y = self.f2out(y)
