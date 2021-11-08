@@ -261,16 +261,17 @@ class SchNetTriple(nn.Module):
 
         if distance_expansion_triple is None:
             self.distance_expansion_triple = GaussianSmearing(
-                0.0, cutoff, n_gaussians, centered=True, trainable=trainable_gaussians
+                0.0, cutoff, n_gaussians, centered=False, trainable=trainable_gaussians
             )
         else:
             self.distance_expansion_triple = distance_expansion_triple
 
         # layer for extracting triple features
         self.triple_distribution = TripleDistribution(
-            max_zeta=max_zeta, n_zeta=n_zeta, crossterm=crossterm
+            max_zeta=max_zeta,
+            n_zeta=n_zeta,
+            crossterm=crossterm,
         )
-
         # block for computing interaction
         if coupled_interactions:
             # use the same SchNetInteraction instance (hence the same weights)
@@ -380,9 +381,14 @@ class SchNetTriple(nn.Module):
             f_jk = None
         # extract angular features
         d_ijk = self.triple_distribution(
-            r_ijk[0], r_ijk[1], r_ijk[2], f_ij, f_ik, f_jk, triple_masks
+            r_ijk[0],
+            r_ijk[1],
+            r_ijk[2],
+            f_ij,
+            f_ik,
+            f_jk,
+            triple_masks,
         )
-
         # store intermediate representations
         if self.return_intermediate:
             xs = [x]

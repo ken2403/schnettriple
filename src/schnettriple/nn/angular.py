@@ -1,3 +1,4 @@
+from math import cos
 import numpy as np
 import torch
 from torch import nn
@@ -19,7 +20,7 @@ class ThetaDistribution(nn.Module):
         zetas = torch.logspace(0, end=np.log2(max_zeta), steps=n_zeta, base=2)
         self.register_buffer("zetas", zetas)
 
-    def forward(self, cos_theta, triple_masks=None):
+    def forward(self, cos_theta):
         """
         Parameters
         ----------
@@ -64,7 +65,16 @@ class TripleDistribution(nn.Module):
         self.theta_filter = ThetaDistribution(max_zeta, n_zeta)
         self.crossterm = crossterm
 
-    def forward(self, r_ij, r_ik, r_jk, f_ij, f_ik, f_jk=None, triple_masks=None):
+    def forward(
+        self,
+        r_ij,
+        r_ik,
+        r_jk,
+        f_ij,
+        f_ik,
+        f_jk=None,
+        triple_masks=None,
+    ):
         """
         Parameters
         ----------
@@ -79,10 +89,14 @@ class TripleDistribution(nn.Module):
         if self.crossterm:
             if f_jk is None:
                 raise TypeError(
-                    "TripleMapping() missing 1 required positional argument: 'f_jk'"
+                    "TripleDistribution() missing 1 required positional argument: 'f_jk'"
                 )
             else:
                 radial_filter = radial_filter * f_jk
+
+        # radial_filter = radial_filter + r_ij.unsqueeze(-1) + r_ij.unsqueeze(-1)
+        # if self.crossterm:
+        #     radial_filter = radial_filter + r_jk.unsqueeze(-1)
 
         # calculate theta_filter
         cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) - torch.pow(r_jk, 2)) / (
@@ -97,10 +111,12 @@ class TripleDistribution(nn.Module):
             angular_filter[triple_masks == 0] = 0.0
 
         # combnation of angular and radial filter
-        triple_ditribution = (
+        triple_distribution = (
             angular_filter[:, :, :, :, None] * radial_filter[:, :, :, None, :]
         )
         # reshape (N_batch * N_atom * N_nbh * N_filter_features)
-        triple_ditribution = triple_ditribution.view(n_batch, n_atoms, n_neighbors, -1)
+        triple_distribution = triple_distribution.view(
+            n_batch, n_atoms, n_neighbors, -1
+        )
 
-        return triple_ditribution
+        return triple_distribution

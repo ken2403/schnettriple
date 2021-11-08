@@ -124,6 +124,7 @@ class CFConvTriple(nn.Module):
 
         # pass triple distribution through filter block (triple)
         W_triple = self.filter_network_triple(d_ijk)
+
         # apply cutoff
         if self.cutoff_network is not None:
             C_ij = self.cutoff_network(r_ij)
