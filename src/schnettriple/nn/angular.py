@@ -1,3 +1,4 @@
+from math import cos
 import numpy as np
 import torch
 from torch import nn
@@ -91,7 +92,7 @@ class TripleDistribution(nn.Module):
         if triple_masks is not None:
             cos_theta[triple_masks == 0] = 0.0
         # angular_filter = self.theta_filter(cos_theta)
-        angular_filter = r_ij[:, :, :, None]
+        angular_filter = torch.rand_like(cos_theta)
 
         if triple_masks is not None:
             radial_filter[triple_masks == 0] = 0.0
