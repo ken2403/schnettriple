@@ -73,6 +73,7 @@ class CFConvTriple(nn.Module):
         triple_masks,
         d_ijk,
         f_double=None,
+        f_ij=None,
     ):
         """
         Compute convolution block.
@@ -123,7 +124,7 @@ class CFConvTriple(nn.Module):
             W_double = W_double * C_double.unsqueeze(-1)
 
         # pass triple distribution through filter block (triple)
-        W_triple = self.filter_network_triple(d_ijk)
+        W_triple = self.filter_network_triple(f_ij)
 
         # apply cutoff
         if self.cutoff_network is not None:
