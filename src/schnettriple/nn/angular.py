@@ -19,7 +19,7 @@ class ThetaDistribution(nn.Module):
         zetas = torch.logspace(0, end=np.log2(max_zeta), steps=n_zeta, base=2)
         self.register_buffer("zetas", zetas)
 
-    def forward(self, cos_theta, triple_masks=None):
+    def forward(self, cos_theta):
         """
         Parameters
         ----------
@@ -97,10 +97,11 @@ class TripleDistribution(nn.Module):
             angular_filter[triple_masks == 0] = 0.0
 
         # combnation of angular and radial filter
-        triple_ditribution = (
-            angular_filter[:, :, :, :, None] * radial_filter[:, :, :, None, :]
-        )
+        # triple_distribution = (
+        #     angular_filter[:, :, :, :, None] * radial_filter[:, :, :, None, :]
+        # )
         # reshape (N_batch * N_atom * N_nbh * N_filter_features)
-        triple_ditribution = triple_ditribution.view(n_batch, n_atoms, n_neighbors, -1)
+        # triple_distribution = triple_distribution.view(n_batch, n_atoms, n_neighbors, -1)
+        triple_distribution = torch.cat((angular_filter, radial_filter), -1)
 
-        return triple_ditribution
+        return triple_distribution
