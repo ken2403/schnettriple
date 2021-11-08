@@ -80,7 +80,7 @@ class TripleDistribution(nn.Module):
         if self.crossterm:
             if f_jk is None:
                 raise TypeError(
-                    "TripleMapping() missing 1 required positional argument: 'f_jk'"
+                    "TripleDistribution() missing 1 required positional argument: 'f_jk'"
                 )
             else:
                 radial_filter = radial_filter * f_jk
@@ -106,4 +106,4 @@ class TripleDistribution(nn.Module):
             n_batch, n_atoms, n_neighbors, -1
         )
 
-        return radial_filter
+        return angular_filter
