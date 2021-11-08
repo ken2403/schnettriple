@@ -1,4 +1,4 @@
-__version_info__ = (0, 3, 48)
+__version_info__ = (0, 3, 49)
 """
 (0.1.5)
 - 3体のfilterをconcatinateせずに、2体のfileterと別々にconvolutionする
