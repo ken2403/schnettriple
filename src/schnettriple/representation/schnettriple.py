@@ -267,7 +267,7 @@ class SchNetTriple(nn.Module):
             self.distance_expansion_triple = distance_expansion_triple
 
         # cutoff network
-        self.cutoff_network = cutoff_network
+        self.cutoff_network = cutoff_network(cutoff)
 
         # layer for extracting triple features
         self.triple_distribution = TripleDistribution(
@@ -393,7 +393,6 @@ class SchNetTriple(nn.Module):
             f_jk,
             triple_masks,
         )
-
         # store intermediate representations
         if self.return_intermediate:
             xs = [x]
