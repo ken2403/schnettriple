@@ -127,6 +127,7 @@ class CFConvTriple(nn.Module):
         W_triple = torch.rand(
             r_ij.size()[0], r_ij.size()[1], r_ij.size()[2], W_double.size()[3]
         )
+        W_triple.to("cuda" if torch.cuda.is_available() else "cpu")
         # apply cutoff
         if self.cutoff_network is not None:
             C_ij = self.cutoff_network(r_ij)
