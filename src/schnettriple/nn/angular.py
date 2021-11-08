@@ -93,6 +93,7 @@ class TripleDistribution(nn.Module):
             cos_theta[triple_masks == 0] = 0.0
         # angular_filter = self.theta_filter(cos_theta)
         angular_filter = torch.rand_like(cos_theta)
+        angular_filter = angular_filter.unsqueeze(-1)
 
         if triple_masks is not None:
             radial_filter[triple_masks == 0] = 0.0
