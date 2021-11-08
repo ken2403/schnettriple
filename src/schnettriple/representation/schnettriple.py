@@ -64,9 +64,8 @@ class SchNetInteractionTriple(nn.Module):
             Dense(n_filters, n_filters, activation=shifted_softplus),
         )
         # fiter block for triple
-        # !!!!!!!!!!!!!!!!!!!!!
         self.filter_network_triple = nn.Sequential(
-            Dense(n_zeta * 2, n_filters, activation=shifted_softplus),
+            Dense(n_spatial_basis * n_zeta * 2, n_filters, activation=shifted_softplus),
             Dense(n_filters, n_filters, activation=shifted_softplus),
         )
         # cutoff layer used in interaction block
