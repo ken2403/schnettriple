@@ -82,7 +82,7 @@ class TripleDistribution(nn.Module):
                     "TripleMapping() missing 1 required positional argument: 'f_jk'"
                 )
             else:
-                radial_filter *= f_jk
+                radial_filter = radial_filter * f_jk
 
         # calculate theta_filter
         cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) - torch.pow(r_jk, 2)) / (

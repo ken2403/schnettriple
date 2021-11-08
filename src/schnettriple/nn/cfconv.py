@@ -131,7 +131,7 @@ class CFConvTriple(nn.Module):
             W_triple = W_triple * C_ij.unsqueeze(-1) * C_ik.unsqueeze(-1)
             if self.crossterm:
                 C_jk = self.cutoff_network(r_jk)
-                W_triple *= C_jk.unsqueeze(-1)
+                W_triple = W_triple * C_jk.unsqueeze(-1)
 
         # pass initial embeddings through Dense layer
         y = self.in2f(x)
