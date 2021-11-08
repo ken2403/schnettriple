@@ -60,10 +60,11 @@ class TripleDistribution(nn.Module):
 
     """
 
-    def __init__(self, max_zeta=1, n_zeta=1, crossterm=False):
+    def __init__(self, max_zeta=1, n_zeta=1, crossterm=False, cutoff_network=None):
         super(TripleDistribution, self).__init__()
         self.theta_filter = ThetaDistribution(max_zeta, n_zeta)
         self.crossterm = crossterm
+        self.cutoff_network = cutoff_network
 
     def forward(
         self,
@@ -74,7 +75,6 @@ class TripleDistribution(nn.Module):
         f_ik,
         f_jk=None,
         triple_masks=None,
-        cutoff_network=None,
     ):
         """
         Parameters
@@ -95,12 +95,12 @@ class TripleDistribution(nn.Module):
             else:
                 radial_filter = radial_filter * f_jk
 
-        if cutoff_network is not None:
-            c_ij = cutoff_network(r_ij).unsqueeze(-1)
-            c_ik = cutoff_network(r_ik).unsqueeze(-1)
+        if self.cutoff_network is not None:
+            c_ij = self.cutoff_network(r_ij).unsqueeze(-1)
+            c_ik = self.cutoff_network(r_ik).unsqueeze(-1)
             radial_filter = radial_filter * c_ij * c_ik
             if self.crossterm:
-                c_jk = cutoff_network(r_jk).unsqueeze(-1)
+                c_jk = self.cutoff_network(r_jk).unsqueeze(-1)
                 radial_filter = radial_filter * c_jk
 
         # calculate theta_filter
