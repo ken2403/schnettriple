@@ -110,7 +110,6 @@ class TripleDistribution(nn.Module):
             radial_filter[triple_masks == 0] = 0.0
             angular_filter[triple_masks == 0] = 0.0
 
-        angular_filter = torch.rand_like(angular_filter)  # !!!!!
         # combnation of angular and radial filter
         triple_distribution = (
             angular_filter[:, :, :, :, None] * radial_filter[:, :, :, None, :]
