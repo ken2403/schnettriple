@@ -60,10 +60,10 @@ class TripleDistribution(nn.Module):
 
     """
 
+    def __init__(self, max_zeta=1, n_zeta=1, crossterm=False):
         super(TripleDistribution, self).__init__()
         self.theta_filter = ThetaDistribution(max_zeta, n_zeta)
         self.crossterm = crossterm
-        self.cutoff_network = cutoff_network
 
     def forward(
         self,

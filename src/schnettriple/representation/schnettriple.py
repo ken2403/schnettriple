@@ -266,15 +266,11 @@ class SchNetTriple(nn.Module):
         else:
             self.distance_expansion_triple = distance_expansion_triple
 
-        # cutoff network
-        self.cutoff_network = cutoff_network(cutoff)
-
         # layer for extracting triple features
         self.triple_distribution = TripleDistribution(
             max_zeta=max_zeta,
             n_zeta=n_zeta,
             crossterm=crossterm,
-            cutoff_network=self.cutoff_network,
         )
         # block for computing interaction
         if coupled_interactions:
