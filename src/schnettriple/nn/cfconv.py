@@ -73,7 +73,6 @@ class CFConvTriple(nn.Module):
         triple_masks,
         d_ijk,
         f_double=None,
-        f_ij=None,
     ):
         """
         Compute convolution block.

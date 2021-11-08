@@ -99,7 +99,6 @@ class SchNetInteractionTriple(nn.Module):
         triple_masks,
         d_ijk,
         f_double=None,
-        f_ij=None,
     ):
         """
         Compute interaction output.
@@ -153,7 +152,6 @@ class SchNetInteractionTriple(nn.Module):
             triple_masks,
             d_ijk,
             f_double,
-            f_ij,
         )
         v = self.dense(v)
 
@@ -409,7 +407,6 @@ class SchNetTriple(nn.Module):
                 triple_masks,
                 d_ijk=d_ijk,
                 f_double=f_double,
-                f_ij=f_ij,
             )
             x = x + v
             if self.return_intermediate:
