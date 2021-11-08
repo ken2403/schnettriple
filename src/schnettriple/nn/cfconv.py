@@ -124,8 +124,8 @@ class CFConvTriple(nn.Module):
             W_double = W_double * C_double.unsqueeze(-1)
 
         # pass triple distribution through filter block (triple)
-        W_triple = self.filter_network_triple(f_ij)
-        W_triple = W_triple + r_ij.unsqueeze(-1)
+        W_triple = self.filter_network_triple(d_ijk)
+
         # apply cutoff
         if self.cutoff_network is not None:
             C_ij = self.cutoff_network(r_ij)
@@ -160,7 +160,8 @@ class CFConvTriple(nn.Module):
         y = y.view(nbh_j_size[0], nbh_j_size[1], nbh_j_size[2], -1)
 
         # element-wise multiplication, aggregating and Dense layer
-        y = y * W_triple
+        # y = y * W_triple
+        y = y * f_ij
         y = self.agg(y, triple_masks)
 
         # output embbedings through Dense layer
