@@ -92,7 +92,7 @@ class TripleDistribution(nn.Module):
             cos_theta[triple_masks == 0] = 0.0
         # angular_filter = self.theta_filter(cos_theta)
         angular_filter = r_ij[:, :, :, None]
-        angular_filter = angular_filter.expand(2)  # !!!!
+        angular_filter = angular_filter.expand(-1, -1, -1, 2)  # !!!!
 
         if triple_masks is not None:
             radial_filter[triple_masks == 0] = 0.0
