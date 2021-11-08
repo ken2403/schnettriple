@@ -90,18 +90,21 @@ class TripleDistribution(nn.Module):
         )
         if triple_masks is not None:
             cos_theta[triple_masks == 0] = 0.0
-        angular_filter = self.theta_filter(cos_theta)
+        # angular_filter = self.theta_filter(cos_theta)
+        angular_filter = r_ij[:, :, :, None]
+        angular_filter = angular_filter.expand(2)  # !!!!
 
         if triple_masks is not None:
             radial_filter[triple_masks == 0] = 0.0
             angular_filter[triple_masks == 0] = 0.0
 
         # combnation of angular and radial filter
-        # triple_distribution = (
-        #     angular_filter[:, :, :, :, None] * radial_filter[:, :, :, None, :]
-        # )
+        triple_distribution = (
+            angular_filter[:, :, :, :, None] * radial_filter[:, :, :, None, :]
+        )
         # reshape (N_batch * N_atom * N_nbh * N_filter_features)
-        # triple_distribution = triple_distribution.view(n_batch, n_atoms, n_neighbors, -1)
-        triple_distribution = torch.cat((angular_filter, radial_filter), -1)
+        triple_distribution = triple_distribution.view(
+            n_batch, n_atoms, n_neighbors, -1
+        )
 
         return triple_distribution
