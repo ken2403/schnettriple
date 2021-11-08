@@ -97,7 +97,6 @@ class TripleDistribution(nn.Module):
         radial_filter = radial_filter + r_ij.unsqueeze(-1) + r_ij.unsqueeze(-1)
         if self.crossterm:
             radial_filter = radial_filter + r_jk.unsqueeze(-1)
-        radial_filter = torch.rand_like(radial_filter)  # !!!!!!!!!!!!
 
         # calculate theta_filter
         cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) - torch.pow(r_jk, 2)) / (
