@@ -156,8 +156,7 @@ class CFConvTriple(nn.Module):
         nbh_k_size = neighbors_k.size()
         nbh_k = neighbors_k.reshape(-1, nbh_k_size[1] * nbh_k_size[2], 1)
         nbh_k = nbh_k.expand(-1, -1, y.size(2))
-        # y = torch.gather(y, 1, nbh_j) + torch.gather(y, 1, nbh_k)
-        y = torch.gather(y, 1, nbh_j)
+        y = torch.gather(y, 1, nbh_j) + torch.gather(y, 1, nbh_k)
         y = y.view(nbh_j_size[0], nbh_j_size[1], nbh_j_size[2], -1)
 
         # element-wise multiplication, aggregating and Dense layer
