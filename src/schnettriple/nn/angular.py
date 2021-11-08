@@ -16,8 +16,8 @@ class ThetaDistribution(nn.Module):
 
     def __init__(self, max_zeta=1, n_zeta=1):
         super(ThetaDistribution, self).__init__()
-        self.zetas = np.logspace(0, stop=np.log2(max_zeta), num=n_zeta, base=2)
-        # self.register_buffer("zetas", zetas)
+        zetas = torch.logspace(0, end=np.log2(max_zeta), steps=n_zeta, base=2)
+        self.register_buffer("zetas", zetas)
 
     def forward(self, cos_theta, triple_masks=None):
         """
@@ -28,13 +28,7 @@ class ThetaDistribution(nn.Module):
         -------
 
         """
-        # # calculate angular_fetures
-        # cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) - torch.pow(r_jk, 2)) / (
-        #     2.0 * r_ij * r_ik
-        # )
-        # # Required in order to catch NaNs during backprop
-        # if triple_masks is not None:
-        #     cos_theta[triple_masks == 0] = 0.0
+        # calculate theta_filters
         angular_pos = [
             2 ** (1 - zeta) * ((1.0 - cos_theta) ** zeta).unsqueeze(-1)
             for zeta in self.zetas
@@ -107,8 +101,6 @@ class TripleDistribution(nn.Module):
             angular_filter[:, :, :, :, None] * radial_filter[:, :, :, None, :]
         )
         # reshape (N_batch * N_atom * N_nbh * N_filter_features)
-        triple_ditribution = triple_ditribution.reshape(
-            n_batch, n_atoms, n_neighbors, -1
-        )
+        triple_ditribution = triple_ditribution.view(n_batch, n_atoms, n_neighbors, -1)
 
         return triple_ditribution

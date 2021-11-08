@@ -357,9 +357,9 @@ class SchNetTriple(nn.Module):
             x = x + charge
 
         # compute doubl distances of every atom to its neighbors
-        # r_double = self.double_ditances(
-        #     positions, neighbors, cell, cell_offset, neighbor_mask=neighbor_mask
-        # )
+        r_double = self.double_ditances(
+            positions, neighbors, cell, cell_offset, neighbor_mask=neighbor_mask
+        )
         # compute tirple distances of every atom to its neighbors
         r_ijk = self.triple_distances(
             positions,
@@ -371,7 +371,7 @@ class SchNetTriple(nn.Module):
             cell_offsets=cell_offset,
         )
         # expand interatomic distances (for example, Gaussian smearing)
-        f_double = self.distance_expansion_double(r_ijk[0])
+        f_double = self.distance_expansion_double(r_double)
         f_ij = self.distance_expansion_triple(r_ijk[0])
         f_ik = self.distance_expansion_triple(r_ijk[1])
         if self.crossterm:
@@ -382,7 +382,6 @@ class SchNetTriple(nn.Module):
         d_ijk = self.triple_distribution(
             r_ijk[0], r_ijk[1], r_ijk[2], f_ij, f_ik, f_jk, triple_masks
         )
-        # d_ijk += r_ijk[0].unsqueeze(-1) + r_ijk[1].unsqueeze(-1)
 
         # store intermediate representations
         if self.return_intermediate:
@@ -391,12 +390,12 @@ class SchNetTriple(nn.Module):
         for interaction in self.interactions:
             v = interaction(
                 x,
-                r_ijk[0],
+                r_double,
                 r_ijk[0],
                 r_ijk[1],
                 r_ijk[2],
-                neighbors_j,
-                triple_masks,
+                neighbors,
+                neighbor_mask,
                 neighbors_j,
                 neighbors_k,
                 triple_masks,
