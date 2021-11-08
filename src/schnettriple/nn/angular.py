@@ -85,7 +85,8 @@ class TripleDistribution(nn.Module):
         """
         n_batch, n_atoms, n_neighbors = r_ij.size()
         # calculate radial_filter
-        radial_filter = f_ij * f_ik
+        # radial_filter = f_ij * f_ik
+        radial_filter = f_ij
         if self.crossterm:
             if f_jk is None:
                 raise TypeError(
