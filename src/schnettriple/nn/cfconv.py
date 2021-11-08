@@ -125,14 +125,14 @@ class CFConvTriple(nn.Module):
         # pass triple distribution through filter block (triple)
         W_triple = self.filter_network_triple(d_ijk)
 
-        # # apply cutoff
-        # if self.cutoff_network is not None:
-        #     C_ij = self.cutoff_network(r_ij)
-        #     C_ik = self.cutoff_network(r_ik)
-        #     W_triple = W_triple * C_ij.unsqueeze(-1) * C_ik.unsqueeze(-1)
-        #     if self.crossterm:
-        #         C_jk = self.cutoff_network(r_jk)
-        #         W_triple = W_triple * C_jk.unsqueeze(-1)
+        # apply cutoff
+        if self.cutoff_network is not None:
+            C_ij = self.cutoff_network(r_ij)
+            C_ik = self.cutoff_network(r_ik)
+            W_triple = W_triple * C_ij.unsqueeze(-1) * C_ik.unsqueeze(-1)
+            if self.crossterm:
+                C_jk = self.cutoff_network(r_jk)
+                W_triple = W_triple * C_jk.unsqueeze(-1)
 
         # pass initial embeddings through Dense layer
         y = self.in2f(x)

@@ -74,7 +74,6 @@ class TripleDistribution(nn.Module):
         f_ik,
         f_jk=None,
         triple_masks=None,
-        cutoff_network=None,
     ):
         """
         Parameters
@@ -95,13 +94,9 @@ class TripleDistribution(nn.Module):
             else:
                 radial_filter = radial_filter * f_jk
 
-        if cutoff_network is not None:
-            c_ij = cutoff_network(r_ij).unsqueeze(-1)
-            c_ik = cutoff_network(r_ik).unsqueeze(-1)
-            radial_filter = radial_filter * c_ij * c_ik
-            if self.crossterm:
-                c_jk = cutoff_network(r_jk).unsqueeze(-1)
-                radial_filter = radial_filter * c_jk
+        radial_filter = radial_filter * r_ij.unsqueeze(-1) * r_ij.unsqueeze(-1)
+        if self.crossterm:
+            radial_filter = radial_filter * r_jk.unsqueeze(-1)
 
         # calculate theta_filter
         cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) - torch.pow(r_jk, 2)) / (
@@ -114,9 +109,6 @@ class TripleDistribution(nn.Module):
         if triple_masks is not None:
             radial_filter[triple_masks == 0] = 0.0
             angular_filter[triple_masks == 0] = 0.0
-
-        # !!!!!!!!!
-        radial_filter = torch.rand_like(radial_filter)
 
         # combnation of angular and radial filter
         triple_distribution = (

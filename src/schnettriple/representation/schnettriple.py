@@ -270,8 +270,6 @@ class SchNetTriple(nn.Module):
         self.triple_distribution = TripleDistribution(
             max_zeta=max_zeta, n_zeta=n_zeta, crossterm=crossterm
         )
-        # cutoff network
-        self.cutoff_network = cutoff_network
         # block for computing interaction
         if coupled_interactions:
             # use the same SchNetInteraction instance (hence the same weights)
@@ -388,7 +386,6 @@ class SchNetTriple(nn.Module):
             f_ik,
             f_jk,
             triple_masks,
-            self.cutoff_network,
         )
 
         # store intermediate representations
