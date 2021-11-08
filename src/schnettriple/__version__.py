@@ -1,4 +1,4 @@
-__version_info__ = (0, 3, 50)
+__version_info__ = (0, 4, 0)
 """
 (0.1.5)
 - 3体のfilterをconcatinateせずに、2体のfileterと別々にconvolutionする
@@ -17,5 +17,7 @@ __version_info__ = (0, 3, 50)
 - positionの入力を一個にするために、r_doubleをr_ijk[0]で代用
 - neighbors_k の効果を足し算して追加
 - torch.reshape → torch.viewに変更(viewはメモリーを共有)
+(0.4.0)
+- triple_distance_expansion()(GassianSmearing)のcentered=Falseとして、expのマイナス乗を避ける
 """
 __version__ = ".".join(map(str, __version_info__))
