@@ -263,7 +263,7 @@ class SchNetTriple(nn.Module):
 
         if distance_expansion_triple is None:
             self.distance_expansion_triple = GaussianSmearing(
-                0.0, cutoff, n_gaussians, centered=True, trainable=trainable_gaussians
+                0.0, cutoff, n_gaussians, centered=False, trainable=trainable_gaussians
             )
         else:
             self.distance_expansion_triple = distance_expansion_triple
