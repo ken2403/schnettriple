@@ -123,7 +123,6 @@ class CFConvTriple(nn.Module):
             W_double = W_double * C_double.unsqueeze(-1)
 
         # pass triple distribution through filter block (triple)
-        d_ijk = torch.rand_like(d_ijk)
         W_triple = self.filter_network_triple(d_ijk)
 
         # apply cutoff
