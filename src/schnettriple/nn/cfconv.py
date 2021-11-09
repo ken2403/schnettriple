@@ -52,6 +52,7 @@ class CFConvTriple(nn.Module):
     ):
         super(CFConvTriple, self).__init__()
         self.in2f = Dense(n_in, n_filters, bias=False, activation=None)
+        self.double_to_triple = Dense(n_filters, n_filters, bias=False, activation=None)
         self.f2out = Dense(n_filters, n_out, bias=True, activation=activation)
         self.filter_network_double = filter_network_double
         self.filter_network_triple = filter_network_triple
@@ -137,16 +138,17 @@ class CFConvTriple(nn.Module):
         # pass initial embeddings through Dense layer
         y = self.in2f(x)
 
-        # # reshape y for element-wise multiplication by W
-        # nbh_size = neighbors.size()
-        # nbh = neighbors.reshape(-1, nbh_size[1] * nbh_size[2], 1)
-        # nbh = nbh.expand(-1, -1, y.size(2))
-        # y = torch.gather(y, 1, nbh)
-        # y = y.view(nbh_size[0], nbh_size[1], nbh_size[2], -1)
+        # reshape y for element-wise multiplication by W
+        nbh_size = neighbors.size()
+        nbh = neighbors.reshape(-1, nbh_size[1] * nbh_size[2], 1)
+        nbh = nbh.expand(-1, -1, y.size(2))
+        y = torch.gather(y, 1, nbh)
+        y = y.view(nbh_size[0], nbh_size[1], nbh_size[2], -1)
 
-        # # element-wise multiplication, aggregating and Dense layer
-        # y = y * W_double
-        # y = self.agg(y, neighbor_mask)
+        # element-wise multiplication, aggregating and Dense layer
+        y = y * W_double
+        y = self.agg(y, neighbor_mask)
+        y = self.double_to_triple(y)
 
         # reshape y for element-wise multiplication by W
         nbh_j_size = neighbors_j.size()
