@@ -19,5 +19,8 @@ __version_info__ = (0, 4, 1)
 - torch.reshape → torch.viewに変更(viewはメモリーを共有)
 (0.4.0)
 - triple_distance_expansion()(GassianSmearing)のcentered=Falseとして、expのマイナス乗を避ける
+(0.4.1)
+- double filter のconvolutionをなくす
+- torch.gatherをするときに、neighborの距離に応じた重み付けを行う
 """
 __version__ = ".".join(map(str, __version_info__))
