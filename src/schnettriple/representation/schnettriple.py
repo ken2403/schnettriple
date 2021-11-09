@@ -11,7 +11,7 @@ from schnetpack.nn.neighbors import AtomDistances
 
 from schnettriple.nn.neighbors import TriplesDistances
 from schnettriple.nn.cfconv import CFConvTriple
-from schnettriple.nn.angular import TripleDistribution
+from schnettriple.nn.angular import AngularDistribution
 
 
 __all__ = ["SchNetInteractionTriple", "SchNetTriple"]
@@ -267,7 +267,7 @@ class SchNetTriple(nn.Module):
             self.distance_expansion_triple = distance_expansion_triple
 
         # layer for extracting triple features
-        self.triple_distribution = TripleDistribution(
+        self.triple_distribution = AngularDistribution(
             max_zeta=max_zeta,
             n_zeta=n_zeta,
             crossterm=crossterm,

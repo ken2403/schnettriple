@@ -4,8 +4,6 @@ import sys
 import torch
 import logging
 import schnetpack as spk
-
-# from schnetpack.utils import (get_model, get_dataset, get_statistics, get_loaders, evaluate)
 from schnetpack.utils import (
     get_metrics,
     get_trainer,

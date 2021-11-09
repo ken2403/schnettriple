@@ -4,7 +4,7 @@ import torch
 from torch import nn
 
 
-__all__ = ["ThetaDistribution", "TripleDistribution"]
+__all__ = ["ThetaDistribution", "AngularDistribution"]
 
 
 class ThetaDistribution(nn.Module):
@@ -43,7 +43,7 @@ class ThetaDistribution(nn.Module):
         return ang_total
 
 
-class TripleDistribution(nn.Module):
+class AngularDistribution(nn.Module):
     """
     入力：距離(N_b*N_atom*N_nbh)とGaussianSmearing (N_b*N_atom*N_nbh*N_gauss)
     出力：triple filter(カットオフ適用前、doubleのカットオフ適用前と同じところまで)　(N_b*N_atom*N_nbh*N_filter)
@@ -61,7 +61,7 @@ class TripleDistribution(nn.Module):
     """
 
     def __init__(self, max_zeta=1, n_zeta=1, crossterm=False):
-        super(TripleDistribution, self).__init__()
+        super(AngularDistribution, self).__init__()
         self.theta_filter = ThetaDistribution(max_zeta, n_zeta)
         self.crossterm = crossterm
 
@@ -94,10 +94,6 @@ class TripleDistribution(nn.Module):
             else:
                 radial_filter = radial_filter * f_jk
 
-        # radial_filter = radial_filter + r_ij.unsqueeze(-1) + r_ij.unsqueeze(-1)
-        # if self.crossterm:
-        #     radial_filter = radial_filter + r_jk.unsqueeze(-1)
-
         # calculate theta_filter
         cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) - torch.pow(r_jk, 2)) / (
             2.0 * r_ij * r_ik
@@ -111,12 +107,12 @@ class TripleDistribution(nn.Module):
             angular_filter[triple_masks == 0] = 0.0
 
         # combnation of angular and radial filter
-        triple_distribution = (
+        angular_distribution = (
             angular_filter[:, :, :, :, None] * radial_filter[:, :, :, None, :]
         )
         # reshape (N_batch * N_atom * N_nbh * N_filter_features)
-        triple_distribution = triple_distribution.view(
+        angular_distribution = angular_distribution.view(
             n_batch, n_atoms, n_neighbors, -1
         )
 
-        return triple_distribution
+        return angular_distribution

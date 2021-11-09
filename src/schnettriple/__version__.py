@@ -1,4 +1,4 @@
-__version_info__ = (0, 4, 0)
+__version_info__ = (0, 4, 2)
 """
 (0.1.5)
 - 3体のfilterをconcatinateせずに、2体のfileterと別々にconvolutionする
@@ -19,5 +19,12 @@ __version_info__ = (0, 4, 0)
 - torch.reshape → torch.viewに変更(viewはメモリーを共有)
 (0.4.0)
 - triple_distance_expansion()(GassianSmearing)のcentered=Falseとして、expのマイナス乗を避ける
+(0.4.1)
+- double filter のconvolutionをなくす
+- torch.gatherをするときに、neighborの距離に応じた重み付けを行う
+(0.4.2)
+- double filterを元に戻す
+- doubleとtiripleの間に一層全結合層を足す
+- hyper parameterのnum_gaussians=30の方が良い
 """
 __version__ = ".".join(map(str, __version_info__))
