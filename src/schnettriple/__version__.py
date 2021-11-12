@@ -1,4 +1,4 @@
-__version_info__ = (0, 4, 2)
+__version_info__ = (0, 4, 3)
 """
 (0.1.5)
 - 3体のfilterをconcatinateせずに、2体のfileterと別々にconvolutionする
@@ -26,5 +26,7 @@ __version_info__ = (0, 4, 2)
 - double filterを元に戻す
 - doubleとtiripleの間に一層全結合層を足す
 - hyper parameterのnum_gaussians=30の方が良い
+(0.4.3)
+- loss functionに正則化項を加えて学習できるようにscriptを修正
 """
 __version__ = ".".join(map(str, __version_info__))
