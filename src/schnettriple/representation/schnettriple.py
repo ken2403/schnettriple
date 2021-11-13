@@ -11,7 +11,7 @@ from schnetpack.nn.neighbors import AtomDistances
 
 from schnettriple.nn.neighbors import TriplesDistances
 from schnettriple.nn.cfconv import CFConvTriple
-from schnettriple.nn.angular import TripleDistribution
+from schnettriple.nn.angular import AngularDistribution
 
 
 __all__ = ["SchNetInteractionTriple", "SchNetTriple"]
@@ -95,6 +95,7 @@ class SchNetInteractionTriple(nn.Module):
         neighbors,
         neighbor_mask,
         neighbors_j,
+        neighbors_k,
         triple_masks,
         d_ijk,
         f_double=None,
@@ -121,6 +122,8 @@ class SchNetInteractionTriple(nn.Module):
 
             neighbors_j : torch.Tensor
                 of (N_b, N_a, N_nbh) shape.
+            neighbors_k : torch.Tensor
+                of (N_b, N_a, N_nbh) shape.
             triple_masks : torch.Tensor
                 mask to filter out non-existing neighbors
                 introduced via padding.
@@ -145,6 +148,7 @@ class SchNetInteractionTriple(nn.Module):
             neighbors,
             neighbor_mask,
             neighbors_j,
+            neighbors_k,
             triple_masks,
             d_ijk,
             f_double,
@@ -257,16 +261,17 @@ class SchNetTriple(nn.Module):
 
         if distance_expansion_triple is None:
             self.distance_expansion_triple = GaussianSmearing(
-                0.0, cutoff, n_gaussians, centered=True, trainable=trainable_gaussians
+                0.0, cutoff, n_gaussians, centered=False, trainable=trainable_gaussians
             )
         else:
             self.distance_expansion_triple = distance_expansion_triple
 
         # layer for extracting triple features
-        self.triple_distribution = TripleDistribution(
-            max_zeta=max_zeta, n_zeta=n_zeta, crossterm=crossterm
+        self.triple_distribution = AngularDistribution(
+            max_zeta=max_zeta,
+            n_zeta=n_zeta,
+            crossterm=crossterm,
         )
-
         # block for computing interaction
         if coupled_interactions:
             # use the same SchNetInteraction instance (hence the same weights)
@@ -376,9 +381,14 @@ class SchNetTriple(nn.Module):
             f_jk = None
         # extract angular features
         d_ijk = self.triple_distribution(
-            r_ijk[0], r_ijk[1], r_ijk[2], f_ij, f_ik, f_jk, triple_masks
+            r_ijk[0],
+            r_ijk[1],
+            r_ijk[2],
+            f_ij,
+            f_ik,
+            f_jk,
+            triple_masks,
         )
-
         # store intermediate representations
         if self.return_intermediate:
             xs = [x]
@@ -393,6 +403,7 @@ class SchNetTriple(nn.Module):
                 neighbors,
                 neighbor_mask,
                 neighbors_j,
+                neighbors_k,
                 triple_masks,
                 d_ijk=d_ijk,
                 f_double=f_double,

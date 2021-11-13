@@ -4,11 +4,7 @@ import sys
 import torch
 import logging
 import schnetpack as spk
-
-# from schnetpack.utils import (get_model, get_dataset, get_statistics, get_loaders, evaluate)
 from schnetpack.utils import (
-    get_metrics,
-    get_trainer,
     ScriptError,
     setup_run,
     get_divide_by_atoms,
@@ -19,7 +15,7 @@ from schnetpack.utils.script_utils.parsing import build_parser
 from schnettriple.utils.evaluation import evaluate
 from schnettriple.utils.data import get_dataset, get_statistics, get_loaders
 from schnettriple.utils.model import get_model
-
+from schnettriple.utils.training import get_metrics, get_trainer
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
@@ -65,7 +61,12 @@ def main(args):
         trainer = get_trainer(args, model, train_loader, val_loader, metrics)
 
         # run training
-        trainer.train(device, n_epochs=args.n_epochs)
+        trainer.train(
+            device,
+            n_epochs=args.n_epochs,
+            regularization=args.regularization,
+            l1_lambda=args.l1_lambda,
+        )
         logging.info("...training done!")
 
     elif args.mode == "eval":

@@ -52,6 +52,7 @@ class CFConvTriple(nn.Module):
     ):
         super(CFConvTriple, self).__init__()
         self.in2f = Dense(n_in, n_filters, bias=False, activation=None)
+        self.double_to_triple = Dense(n_filters, n_filters, bias=False, activation=None)
         self.f2out = Dense(n_filters, n_out, bias=True, activation=activation)
         self.filter_network_double = filter_network_double
         self.filter_network_triple = filter_network_triple
@@ -69,6 +70,7 @@ class CFConvTriple(nn.Module):
         neighbors,
         neighbor_mask,
         neighbors_j,
+        neighbors_k,
         triple_masks,
         d_ijk,
         f_double=None,
@@ -94,6 +96,8 @@ class CFConvTriple(nn.Module):
             neighbor_mask :
 
             neighbors_j : torch.Tensor
+                of (N_b, N_a, N_nbh) shape.
+            neighbors_k : torch.Tensor
                 of (N_b, N_a, N_nbh) shape.
             triple_masks : torch.Tensor
                 mask to filter out non-existing neighbors
@@ -121,6 +125,7 @@ class CFConvTriple(nn.Module):
 
         # pass triple distribution through filter block (triple)
         W_triple = self.filter_network_triple(d_ijk)
+
         # apply cutoff
         if self.cutoff_network is not None:
             C_ij = self.cutoff_network(r_ij)
@@ -128,7 +133,7 @@ class CFConvTriple(nn.Module):
             W_triple = W_triple * C_ij.unsqueeze(-1) * C_ik.unsqueeze(-1)
             if self.crossterm:
                 C_jk = self.cutoff_network(r_jk)
-                W_triple *= C_jk.unsqueeze(-1)
+                W_triple = W_triple * C_jk.unsqueeze(-1)
 
         # pass initial embeddings through Dense layer
         y = self.in2f(x)
@@ -143,13 +148,23 @@ class CFConvTriple(nn.Module):
         # element-wise multiplication, aggregating and Dense layer
         y = y * W_double
         y = self.agg(y, neighbor_mask)
+        y = self.double_to_triple(y)
 
         # reshape y for element-wise multiplication by W
-        nbh_size = neighbors_j.size()
-        nbh = neighbors_j.reshape(-1, nbh_size[1] * nbh_size[2], 1)
-        nbh = nbh.expand(-1, -1, y.size(2))
-        y = torch.gather(y, 1, nbh)
-        y = y.view(nbh_size[0], nbh_size[1], nbh_size[2], -1)
+        nbh_j_size = neighbors_j.size()
+        nbh_j = neighbors_j.reshape(-1, nbh_j_size[1] * nbh_j_size[2], 1)
+        nbh_j = nbh_j.expand(-1, -1, y.size(2))
+        r_ij_nbh = r_ij.reshape(-1, nbh_j_size[1] * nbh_j_size[2], 1)
+        r_ij_nbh = r_ij_nbh.expand(-1, -1, y.size(2))
+        nbh_k_size = neighbors_k.size()
+        nbh_k = neighbors_k.reshape(-1, nbh_k_size[1] * nbh_k_size[2], 1)
+        nbh_k = nbh_k.expand(-1, -1, y.size(2))
+        r_ik_nbh = r_ik.reshape(-1, nbh_j_size[1] * nbh_j_size[2], 1)
+        r_ik_nbh = r_ik_nbh.expand(-1, -1, y.size(2))
+        y = (
+            r_ij_nbh * torch.gather(y, 1, nbh_j) + r_ik_nbh * torch.gather(y, 1, nbh_k)
+        ) / (r_ij_nbh + r_ik_nbh)
+        y = y.view(nbh_j_size[0], nbh_j_size[1], nbh_j_size[2], -1)
 
         # element-wise multiplication, aggregating and Dense layer
         y = y * W_triple
