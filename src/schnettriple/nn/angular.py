@@ -45,16 +45,8 @@ class ThetaDistribution(nn.Module):
 
 class AngularDistribution(nn.Module):
     """
-    入力：距離(N_b*N_atom*N_nbh)とGaussianSmearing (N_b*N_atom*N_nbh*N_gauss)
-    出力：triple filter(カットオフ適用前、doubleのカットオフ適用前と同じところまで)　(N_b*N_atom*N_nbh*N_filter)
+    Docstring
 
-    やること：
-        距離から角度計算(N_b*N_atom*N_nbh)→(N_b*N_atom*N_nbh)
-        zetaの生成(np.logspase)
-        zeta分のfilter生成(N_b*N_atom*N_nbh)→(N_b*N_atom*N_nbh＊N_zeta) →AngularMappingで実装
-
-        GaussianSmearingとうまく組み合わせる→(N_b*N_atom*N_nbh＊N_gaussとN_zetaの組み合わせ)
-        これをfiler生成NNに流す、Dense2つ→(N_b*N_atom*N_nbh＊N_filter) → CFconvで実装
     Attributes
     ----------
 
