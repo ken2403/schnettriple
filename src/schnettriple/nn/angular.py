@@ -55,7 +55,6 @@ class AngularDistribution(nn.Module):
     def __init__(self, max_zeta=1, n_zeta=1, crossterm=False):
         super(AngularDistribution, self).__init__()
         self.theta_filter = ThetaDistribution(max_zeta, n_zeta)
-        self.crossterm = crossterm
 
     def forward(
         self,
@@ -63,8 +62,7 @@ class AngularDistribution(nn.Module):
         r_ik,
         r_jk,
         f_ij,
-        f_ik,
-        f_jk=None,
+        f_jk,
         triple_masks=None,
     ):
         """
@@ -77,14 +75,7 @@ class AngularDistribution(nn.Module):
         """
         n_batch, n_atoms, n_neighbors = r_ij.size()
         # calculate radial_filter
-        radial_filter = f_ij * f_ik
-        if self.crossterm:
-            if f_jk is None:
-                raise TypeError(
-                    "TripleDistribution() missing 1 required positional argument: 'f_jk'"
-                )
-            else:
-                radial_filter = radial_filter * f_jk
+        radial_filter = f_ij * f_jk
 
         # calculate theta_filter
         cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) - torch.pow(r_jk, 2)) / (
