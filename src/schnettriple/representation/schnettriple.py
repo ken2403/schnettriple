@@ -91,7 +91,6 @@ class SchNetInteractionTriple(nn.Module):
         x,
         r_double,
         r_ij,
-        r_ik,
         r_jk,
         neighbors,
         neighbor_mask,
@@ -112,8 +111,6 @@ class SchNetInteractionTriple(nn.Module):
         r_double : torch.tensor
 
         r_ij : torch.tensor
-
-        r_ik : torch.tensor
 
         r_jk : torch.tensor
 
@@ -144,7 +141,6 @@ class SchNetInteractionTriple(nn.Module):
             x,
             r_double,
             r_ij,
-            r_ik,
             r_jk,
             neighbors,
             neighbor_mask,
@@ -387,7 +383,6 @@ class SchNetTriple(nn.Module):
                 x,
                 r_double,
                 r_ijk[0],
-                r_ijk[1],
                 r_ijk[2],
                 neighbors,
                 neighbor_mask,

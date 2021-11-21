@@ -60,7 +60,6 @@ class CFConvTriple(nn.Module):
         x,
         r_double,
         r_ij,
-        r_ik,
         r_jk,
         neighbors,
         neighbor_mask,
@@ -81,8 +80,6 @@ class CFConvTriple(nn.Module):
         r_double :
 
         r_ij :
-
-        r_ik :
 
         r_jk :
 
