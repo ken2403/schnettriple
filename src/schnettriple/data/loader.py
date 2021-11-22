@@ -92,8 +92,9 @@ def _collate_aseatoms_modify(examples):
             nbh_idx_j = properties[Properties.neighbor_pairs_j]
             shape = nbh_idx_j.size()
             s = (k,) + tuple([slice(0, d) for d in shape])
-            batch[Properties.neighbor_pairs_mask][s] = nbh_idx_j >= 0
-            batch[Properties.neighbor_pairs_mask][s] = nbh_idx_j * mask.long()
+            triple_mask = nbh_idx_j >= 0
+            batch[Properties.neighbor_pairs_mask][s] = triple_mask
+            batch[Properties.neighbor_pairs_mask][s] = nbh_idx_j * triple_mask.long()
 
     return batch
 
