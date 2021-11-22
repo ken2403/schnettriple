@@ -183,23 +183,23 @@ def get_model(args, train_loader, mean, stddev, atomref, logging=None):
 
     Parameters
     ----------
-        args : argsparse.Namespace
-            Script arguments
-        train_loader : schnetpack.AtomsLoader
-            loader for training data
-        mean : torch.Tensor
-            mean of training data
-        stddev : torch.Tensor
-            stddev of training data
-        atomref : dict
-            atomic references
-        logging : default=None
-            logger
+    args : argsparse.Namespace
+        Script arguments
+    train_loader : schnetpack.AtomsLoader
+        loader for training data
+    mean : torch.Tensor
+        mean of training data
+    stddev : torch.Tensor
+        stddev of training data
+    atomref : dict
+        atomic references
+    logging : default=None
+        logger
 
     Returns
     -------
-        schnetpack.AtomisticModel
-            model for training or evaluation
+    schnetpack.AtomisticModel
+        model for training or evaluation
     """
     if args.mode == "train":
         if logging:
