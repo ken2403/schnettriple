@@ -34,4 +34,5 @@ __version__ = ".".join(map(str, __version_info__))
 - r_jkを使ってtriple distributionを求める
 - pbcのreshapeのところは、neighbor_jのみの和を取る形に変更
 - ！！environment_provider を'ase'とする！！
+- neighborのindexが-1とならないようにloaderを修正
 """
