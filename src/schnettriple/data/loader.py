@@ -89,12 +89,12 @@ def _collate_aseatoms_modify(examples):
         # Since the structure of both idx_j and idx_k is identical
         # (not the values), only one cutoff mask has to be generated
         if Properties.neighbor_pairs_j in properties:
-            nbh_idx_j = properties[Properties.neighbor_pairs_j][s]
+            nbh_idx_j = properties[Properties.neighbor_pairs_j]
             shape = nbh_idx_j.size()
             s = (k,) + tuple([slice(0, d) for d in shape])
             triple_mask = nbh_idx_j >= 0
             batch[Properties.neighbor_pairs_mask][s] = triple_mask
-            batch[Properties.neighbor_pairs_mask][s] = nbh_idx_j * triple_mask.long()
+            batch[Properties.neighbor_pairs_j][s] = nbh_idx_j * triple_mask.long()
 
     return batch
 
