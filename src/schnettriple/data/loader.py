@@ -99,11 +99,12 @@ def _collate_aseatoms_modify(examples):
     return batch
 
 
-class AtomsLoaderTriple(spk.AtomsLoader):
+class AtomsLoaderTriple(AtomsLoader):
     """
     Specialized ``torch.data.DataLoader`` which uses the correct
     collate_fn for AtomsData and provides functionality for calculating mean
     and stddev.
+
     Parameters
     ----------
     dataset : Dataset
@@ -148,7 +149,7 @@ class AtomsLoaderTriple(spk.AtomsLoader):
         timeout=0,
         worker_init_fn=None,
     ):
-        super(AtomsLoader, self).__init__(
+        super(AtomsLoaderTriple, self).__init__(
             dataset=dataset,
             batch_size=batch_size,
             shuffle=shuffle,
