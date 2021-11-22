@@ -2,7 +2,6 @@ import logging
 
 import numpy as np
 import torch
-import schnetpack as spk
 from schnetpack import Properties
 from schnetpack.data.loader import AtomsLoader
 
