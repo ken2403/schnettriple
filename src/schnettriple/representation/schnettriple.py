@@ -359,8 +359,11 @@ class SchNetTriple(nn.Module):
         )
         # expand interatomic distances (for example, Gaussian smearing)
         f_double = self.distance_expansion_double(r_double)
+        f_double = f_double * neighbors.unsqueeze(-1)
         f_ij = self.distance_expansion_triple(r_ijk[0])
+        f_ij = f_ij * triple_mask.unsqueeze(-1)
         f_jk = self.distance_expansion_triple(r_ijk[2])
+        f_jk = f_jk * triple_mask.unsqueeze(-1)
         # extract angular features
         d_ijk = self.triple_distribution(
             r_ijk[0],
