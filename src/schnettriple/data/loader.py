@@ -9,7 +9,7 @@ from schnetpack.data.loader import AtomsLoader
 logger = logging.getLogger(__name__)
 
 
-__all__ = ["AtomsLoader"]
+__all__ = ["AtomsLoaderTriple"]
 
 
 def _collate_aseatoms_modify(examples):
@@ -89,7 +89,7 @@ def _collate_aseatoms_modify(examples):
         # Since the structure of both idx_j and idx_k is identical
         # (not the values), only one cutoff mask has to be generated
         if Properties.neighbor_pairs_j in properties:
-            nbh_idx_j = properties[Properties.neighbor_pairs_j]
+            nbh_idx_j = properties[Properties.neighbor_pairs_j][s]
             shape = nbh_idx_j.size()
             s = (k,) + tuple([slice(0, d) for d in shape])
             triple_mask = nbh_idx_j >= 0
@@ -99,7 +99,7 @@ def _collate_aseatoms_modify(examples):
     return batch
 
 
-class AtomsLoader(spk.AtomsLoader):
+class AtomsLoaderTriple(spk.AtomsLoader):
     """
     Specialized ``torch.data.DataLoader`` which uses the correct
     collate_fn for AtomsData and provides functionality for calculating mean
