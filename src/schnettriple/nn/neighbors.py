@@ -97,15 +97,6 @@ def triple_distances(
     r_ik = torch.norm(R_ik, 2, 3) + 1e-9
     r_jk = torch.norm(R_jk, 2, 3) + 1e-9
 
-    if triple_mask is not None:
-        # Avoid problems with zero distances in forces (instability of square
-        # root derivative at 0) This way is neccessary, as gradients do not
-        # work with inplace operations, such as e.g.
-        # -> distances[mask==0] = 0.0
-        tmp_distances = torch.zeros_like(r_ij)
-        tmp_distances[triple_mask != 0] = r_ij[triple_mask != 0]
-        r_ij = tmp_distances
-
     return r_ij, r_ik, r_jk
 
 
