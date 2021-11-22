@@ -65,7 +65,7 @@ class CFConvTriple(nn.Module):
         neighbor_mask,
         neighbors_j,
         neighbors_k,
-        triple_masks,
+        triple_mask,
         d_ijk,
         f_double=None,
     ):
@@ -155,7 +155,7 @@ class CFConvTriple(nn.Module):
 
         # element-wise multiplication, aggregating and Dense layer
         y = y * W_triple
-        y = self.agg(y, triple_masks)
+        y = self.agg(y, triple_mask)
 
         # output embbedings through Dense layer
         y = self.f2out(y)

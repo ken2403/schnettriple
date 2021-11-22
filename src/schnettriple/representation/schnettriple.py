@@ -91,7 +91,7 @@ class SchNetInteractionTriple(nn.Module):
         neighbor_mask,
         neighbors_j,
         neighbors_k,
-        triple_masks,
+        triple_mask,
         d_ijk,
         f_double=None,
     ):
@@ -141,7 +141,7 @@ class SchNetInteractionTriple(nn.Module):
             neighbor_mask,
             neighbors_j,
             neighbors_k,
-            triple_masks,
+            triple_mask,
             d_ijk,
             f_double,
         )
@@ -306,16 +306,16 @@ class SchNetTriple(nn.Module):
 
         Parameters
         ----------
-            inputs : dict of torch.Tensor
-                SchNetPack dictionary of input tensors.
+        inputs : dict of torch.Tensor
+            SchNetPack dictionary of input tensors.
 
         Returns
         -------
-            torch.Tensor
-                atom-wise representation.
-            list of torch.Tensor
-                intermediate atom-wise representations,
-                if return_intermediate=True was used.
+        torch.Tensor
+            atom-wise representation.
+        list of torch.Tensor
+            intermediate atom-wise representations,
+            if return_intermediate=True was used.
 
         """
         # get tensors from input dictionary
@@ -331,7 +331,7 @@ class SchNetTriple(nn.Module):
         neighbors_k = inputs[Properties.neighbor_pairs_k]
         neighbor_offsets_j = inputs[Properties.neighbor_offsets_j]
         neighbor_offsets_k = inputs[Properties.neighbor_offsets_k]
-        triple_masks = inputs[Properties.neighbor_pairs_mask]
+        triple_mask = inputs[Properties.neighbor_pairs_mask]
 
         # get atom embeddings for the input atomic numbers
         x = self.embedding(atomic_numbers)
@@ -342,7 +342,7 @@ class SchNetTriple(nn.Module):
             charge = charge[:, None] * self.charge  # B x F
             x = x + charge
 
-        # compute doubl distances of every atom to its neighbors
+        # compute double distances of every atom to its neighbors
         r_double = self.double_ditances(
             positions, neighbors, cell, cell_offset, neighbor_mask=neighbor_mask
         )
@@ -355,6 +355,7 @@ class SchNetTriple(nn.Module):
             offset_idx_k=neighbor_offsets_k,
             cell=cell,
             cell_offsets=cell_offset,
+            triple_mask=triple_mask,
         )
         # expand interatomic distances (for example, Gaussian smearing)
         f_double = self.distance_expansion_double(r_double)
@@ -367,7 +368,7 @@ class SchNetTriple(nn.Module):
             r_ijk[2],
             f_ij,
             f_jk,
-            triple_masks,
+            triple_mask,
         )
         # store intermediate representations
         if self.return_intermediate:
@@ -383,7 +384,7 @@ class SchNetTriple(nn.Module):
                 neighbor_mask,
                 neighbors_j,
                 neighbors_k,
-                triple_masks,
+                triple_mask,
                 d_ijk=d_ijk,
                 f_double=f_double,
             )
