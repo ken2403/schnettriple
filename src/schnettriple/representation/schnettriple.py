@@ -355,15 +355,14 @@ class SchNetTriple(nn.Module):
             offset_idx_k=neighbor_offsets_k,
             cell=cell,
             cell_offsets=cell_offset,
-            triple_mask=triple_mask,
         )
         # expand interatomic distances (for example, Gaussian smearing)
         f_double = self.distance_expansion_double(r_double)
-        f_double = f_double * neighbors.unsqueeze(-1)
+        f_double[neighbor_mask == 0] = 0.0
         f_ij = self.distance_expansion_triple(r_ijk[0])
-        f_ij = f_ij * triple_mask.unsqueeze(-1)
+        f_ij[triple_mask == 0] = 0.0
         f_jk = self.distance_expansion_triple(r_ijk[2])
-        f_jk = f_jk * triple_mask.unsqueeze(-1)
+        f_jk[triple_mask == 0] = 0.0
         # extract angular features
         d_ijk = self.triple_distribution(
             r_ijk[0],
