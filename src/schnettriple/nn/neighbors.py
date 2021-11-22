@@ -13,7 +13,6 @@ def triple_distances(
     offset_idx_k=None,
     cell=None,
     cell_offsets=None,
-    triple_mask=None,
 ):
     """
     Get all distances between atoms forming a triangle with the central atoms.
@@ -35,7 +34,6 @@ def triple_distances(
         periodic cell of (N_b x 3 x 3) shape.
     cell_offsets : torch.Tensor, optional
         offset of atom in cell coordinates with (N_b x N_at x N_nbh x 3) shape.
-    triple_mask : torch.tensor
 
     Returns
     -------
@@ -118,7 +116,6 @@ class TriplesDistances(nn.Module):
         offset_idx_k=None,
         cell=None,
         cell_offsets=None,
-        triple_mask=None,
     ):
         """
         Parameters
@@ -137,7 +134,6 @@ class TriplesDistances(nn.Module):
             periodic cell of (N_b x 3 x 3) shape.
         cell_offsets : torch.Tensor, optional
             offset of atom in cell coordinates with (N_b x N_at x N_nbh x 3) shape.
-        triple_mask : torch.tensor
 
         Returns
         -------
@@ -157,5 +153,4 @@ class TriplesDistances(nn.Module):
             offset_idx_k,
             cell,
             cell_offsets,
-            triple_mask,
         )
