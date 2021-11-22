@@ -346,6 +346,7 @@ class SchNetTriple(nn.Module):
         r_double = self.double_ditances(
             positions, neighbors, cell, cell_offset, neighbor_mask=neighbor_mask
         )
+        r_double[neighbor_mask == 0] = 0.0
         # compute tirple distances of every atom to its neighbors
         r_ijk = self.triple_distances(
             positions,
@@ -356,13 +357,13 @@ class SchNetTriple(nn.Module):
             cell=cell,
             cell_offsets=cell_offset,
         )
+        r_ijk[0][triple_mask == 0] = 0.0
+        r_ijk[1][triple_mask == 0] = 0.0
+        r_ijk[2][triple_mask == 0] = 0.0
         # expand interatomic distances (for example, Gaussian smearing)
         f_double = self.distance_expansion_double(r_double)
-        f_double[neighbor_mask == 0] = 0.0
         f_ij = self.distance_expansion_triple(r_ijk[0])
-        f_ij[triple_mask == 0] = 0.0
         f_jk = self.distance_expansion_triple(r_ijk[2])
-        f_jk[triple_mask == 0] = 0.0
         # extract angular features
         d_ijk = self.triple_distribution(
             r_ijk[0],
