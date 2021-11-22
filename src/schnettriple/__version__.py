@@ -36,5 +36,5 @@ __version__ = ".".join(map(str, __version_info__))
 - ！！environment_provider を'ase'とする！！
 - neighborのindexが-1とならないようにloaderを修正
 (0.4.5)
--
+- gussian expand した距離の値にneighbor maskを適用する
 """
