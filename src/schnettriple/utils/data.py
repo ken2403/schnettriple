@@ -5,7 +5,7 @@ import schnetpack as spk
 from torch.utils.data.sampler import RandomSampler
 from schnetpack.utils.script_utils.script_error import ScriptError
 
-from schnettriple.data.loader import AtomsLoader
+from schnettriple.data.loader import AtomsLoaderTriple
 
 
 __all__ = ["get_loaders", "get_statistics", "get_dataset"]
@@ -106,17 +106,17 @@ def get_loaders(args, dataset, split_path, logging=None):
         logging.info("load data...")
 
     # build dataloaders
-    train_loader = AtomsLoader(
+    train_loader = AtomsLoaderTriple(
         data_train,
         batch_size=args.batch_size,
         sampler=RandomSampler(data_train),
         num_workers=4,
         pin_memory=args.cuda,
     )
-    val_loader = AtomsLoader(
+    val_loader = AtomsLoaderTriple(
         data_val, batch_size=args.batch_size, num_workers=2, pin_memory=args.cuda
     )
-    test_loader = AtomsLoader(
+    test_loader = AtomsLoaderTriple(
         data_test, batch_size=args.batch_size, num_workers=2, pin_memory=args.cuda
     )
 
