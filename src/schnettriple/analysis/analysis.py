@@ -89,7 +89,7 @@ class SchNetAnalysis:
         self,
         error="RMSE",
         props=("energy", "forces"),
-        units=("eV", "eV/\u212B"),
+        units=("eV", "eV/angstrom"),
         axes=None,
         verbose=True,
     ):
