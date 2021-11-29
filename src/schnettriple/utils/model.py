@@ -71,7 +71,6 @@ def get_representation(args, train_loader=None):
             max_zeta=args.max_zeta,
             n_zeta=args.n_zeta,
             normalize_filter=args.normalize_filter,
-            crossterm=args.crossterm,
         )
 
     else:
@@ -184,23 +183,23 @@ def get_model(args, train_loader, mean, stddev, atomref, logging=None):
 
     Parameters
     ----------
-        args : argsparse.Namespace
-            Script arguments
-        train_loader : schnetpack.AtomsLoader
-            loader for training data
-        mean : torch.Tensor
-            mean of training data
-        stddev : torch.Tensor
-            stddev of training data
-        atomref : dict
-            atomic references
-        logging : default=None
-            logger
+    args : argsparse.Namespace
+        Script arguments
+    train_loader : schnetpack.AtomsLoader
+        loader for training data
+    mean : torch.Tensor
+        mean of training data
+    stddev : torch.Tensor
+        stddev of training data
+    atomref : dict
+        atomic references
+    logging : default=None
+        logger
 
     Returns
     -------
-        schnetpack.AtomisticModel
-            model for training or evaluation
+    schnetpack.AtomisticModel
+        model for training or evaluation
     """
     if args.mode == "train":
         if logging:

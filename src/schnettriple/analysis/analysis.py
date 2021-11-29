@@ -89,7 +89,7 @@ class SchNetAnalysis:
         self,
         error="RMSE",
         props=("energy", "forces"),
-        units=("eV", "eV/\u212B"),
+        units=("eV", "eV/angstrom"),
         axes=None,
         verbose=True,
     ):
@@ -131,7 +131,7 @@ class SchNetAnalysis:
         axes[0].legend(loc="best")
         axes[0].set_xlabel("epoch")
         axes[0].set_ylabel("loss")
-        axes[0].set_title("Loss")
+        axes[0].set_title("Loss-Epoch")
 
         # plot error for prpops[0]
         error_0 = "_".join([error, props[0]])

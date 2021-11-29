@@ -5,6 +5,8 @@ import schnetpack as spk
 from torch.utils.data.sampler import RandomSampler
 from schnetpack.utils.script_utils.script_error import ScriptError
 
+from schnettriple.data.loader import AtomsLoaderTriple
+
 
 __all__ = ["get_loaders", "get_statistics", "get_dataset"]
 
@@ -17,25 +19,25 @@ def get_statistics(
 
     Parameters
     ----------
-        args : argparse.Namespace
-            parsed script arguments
-        split_path : str
-            path to the split file
-        train_loader : schnetpack.data.AtomsLoader
-            dataloader for training set
-        atomref : dict
-            atomic references
-        divide_by_atoms : dict or bool, default=None
-            divide mean by number of atoms if True
-        logging : default=None
-            logger
+    args : argparse.Namespace
+        parsed script arguments
+    split_path : str
+        path to the split file
+    train_loader : schnetpack.data.AtomsLoader
+        dataloader for training set
+    atomref : dict
+        atomic references
+    divide_by_atoms : dict or bool, default=None
+        divide mean by number of atoms if True
+    logging : default=None
+        logger
 
     Returns
     -------
-        mean : dict
-            mean values for the selected properties
-        stddev : dict
-            stddev values for the selected properties
+    mean : dict
+        mean values for the selected properties
+    stddev : dict
+        stddev values for the selected properties
     """
     # check if split file exists
     if not os.path.exists(split_path):
@@ -73,19 +75,19 @@ def get_loaders(args, dataset, split_path, logging=None):
 
     Parameters
     ----------
-        args : argparse.Namespace
-            parsed script arguments
-        dataset : schnetpack.AtomsData
-            total dataset
-        split_path : str
-            path to split file
-        logging : default=None
-            logger
+    args : argparse.Namespace
+        parsed script arguments
+    dataset : schnetpack.AtomsData
+        total dataset
+    split_path : str
+        path to split file
+    logging : default=None
+        logger
 
     Returns
     -------
-        (schnetpack.AtomsLoader, schetpack.AtomsLoader, schnetpack.AtomsLoader)
-            dataloaders for train, val and test
+    schnettriple.AtomsLoader, schettriple.AtomsLoader, schnettriple.AtomsLoader
+        dataloaders for train, val and test
     """
     if logging is not None:
         logging.info("create splits...")
@@ -104,17 +106,17 @@ def get_loaders(args, dataset, split_path, logging=None):
         logging.info("load data...")
 
     # build dataloaders
-    train_loader = spk.data.AtomsLoader(
+    train_loader = AtomsLoaderTriple(
         data_train,
         batch_size=args.batch_size,
         sampler=RandomSampler(data_train),
         num_workers=4,
         pin_memory=args.cuda,
     )
-    val_loader = spk.data.AtomsLoader(
+    val_loader = AtomsLoaderTriple(
         data_val, batch_size=args.batch_size, num_workers=2, pin_memory=args.cuda
     )
-    test_loader = spk.data.AtomsLoader(
+    test_loader = AtomsLoaderTriple(
         data_test, batch_size=args.batch_size, num_workers=2, pin_memory=args.cuda
     )
 

@@ -1,4 +1,4 @@
-__version_info__ = (0, 4, 3)
+__version_info__ = (0, 4, 5)
 __version__ = ".".join(map(str, __version_info__))
 """
 (0.1.5)
@@ -29,4 +29,12 @@ __version__ = ".".join(map(str, __version_info__))
 - hyper parameterのnum_gaussians=30の方が良い
 (0.4.3)
 - loss functionに正則化項を加えて学習できるようにscriptを修正
+(0.4.4)
+- cfconv でdoubleからtripleへの全結合層なくす
+- r_jkを使ってtriple distributionを求める
+- pbcのreshapeのところは、neighbor_jのみの和を取る形に変更
+- ！！environment_provider を'ase'とする！！
+- neighborのindexが-1とならないようにloaderを修正
+(0.4.5)
+- gussian expand した距離の値にneighbor maskを適用する
 """

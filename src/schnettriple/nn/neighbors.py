@@ -20,28 +20,28 @@ def triple_distances(
 
     Parameters
     ----------
-        positions : torch.Tensor
-            Atomic positions
-        neighbors_j : torch.Tensor
-            Indices of first neighbor in triangle
-        neighbors_k : torch.Tensor
-            Indices of second neighbor in triangle
-        offset_idx_j : torch.Tensor
-            Indices for offets of neighbors j (for PBC)
-        offset_idx_k : torch.Tensor
-            Indices for offets of neighbors k (for PBC)
-        cell : torch.tensor, optional
-            periodic cell of (N_b x 3 x 3) shape.
-        cell_offsets : torch.Tensor, optional
-            offset of atom in cell coordinates with (N_b x N_at x N_nbh x 3) shape.
+    positions : torch.Tensor
+        Atomic positions
+    neighbors_j : torch.Tensor
+        Indices of first neighbor in triangle
+    neighbors_k : torch.Tensor
+        Indices of second neighbor in triangle
+    offset_idx_j : torch.Tensor
+        Indices for offets of neighbors j (for PBC)
+    offset_idx_k : torch.Tensor
+        Indices for offets of neighbors k (for PBC)
+    cell : torch.tensor, optional
+        periodic cell of (N_b x 3 x 3) shape.
+    cell_offsets : torch.Tensor, optional
+        offset of atom in cell coordinates with (N_b x N_at x N_nbh x 3) shape.
 
     Returns
     -------
-        torch.Tensor
-            Distance between central atom and neighbor j
-        torch.Tensor
-            Distance between central atom and neighbor k
-        torch.Tensor
+    torch.Tensor
+        Distance between central atom and neighbor j
+    torch.Tensor
+        Distance between central atom and neighbor k
+    torch.Tensor
             Distance between neighbors
 
     """
@@ -120,29 +120,29 @@ class TriplesDistances(nn.Module):
         """
         Parameters
         ----------
-            positions : torch.Tensor
-                Atomic positions
-            neighbors_j : torch.Tensor
-                Indices of first neighbor in triangle
-            neighbors_k : torch.Tensor
-                Indices of second neighbor in triangle
-            offset_idx_j : torch.Tensor
-                Indices for offets of neighbors j (for PBC)
-            offset_idx_k : torch.Tensor
-                Indices for offets of neighbors k (for PBC)
-            cell : torch.tensor, optional
-                periodic cell of (N_b x 3 x 3) shape.
-            cell_offsets : torch.Tensor, optional
-                offset of atom in cell coordinates with (N_b x N_at x N_nbh x 3) shape.
+        positions : torch.Tensor
+            Atomic positions
+        neighbors_j : torch.Tensor
+            Indices of first neighbor in triangle
+        neighbors_k : torch.Tensor
+            Indices of second neighbor in triangle
+        offset_idx_j : torch.Tensor
+            Indices for offets of neighbors j (for PBC)
+        offset_idx_k : torch.Tensor
+            Indices for offets of neighbors k (for PBC)
+        cell : torch.tensor, optional
+            periodic cell of (N_b x 3 x 3) shape.
+        cell_offsets : torch.Tensor, optional
+            offset of atom in cell coordinates with (N_b x N_at x N_nbh x 3) shape.
 
         Returns
         -------
-            torch.Tensor
-                Distance between central atom and neighbor j
-            torch.Tensor
-                Distance between central atom and neighbor k
-            torch.Tensor
-                Distance between neighbors
+        torch.Tensor
+            Distance between central atom and neighbor j
+        torch.Tensor
+            Distance between central atom and neighbor k
+        torch.Tensor
+            Distance between neighbors
 
         """
         return triple_distances(
