@@ -33,9 +33,10 @@ def get_representation(args, train_loader=None):
             n_filters=args.features,
             n_interactions=args.interactions,
             cutoff=args.cutoff,
-            n_gaussians=args.num_gaussians,
+            n_gaussians=args.num_gaussian_double,
             cutoff_network=cutoff_network,
             normalize_filter=args.normalize_filter,
+            coupled_interactions=args.share_weights,
         )
 
     elif args.model == "wacsf":
@@ -72,18 +73,20 @@ def get_representation(args, train_loader=None):
             return representation
 
     elif args.model == "schnettriple":
-        cutoff_network = spk.nn.cutoff.get_cutoff_by_string(args.cutoff_function)
+        cutoff_network = _get_cutoff_by_string(args.cutoff_function)
 
         return schnettriple.SchNetTriple(
             n_atom_basis=args.features,
             n_filters=args.features,
             n_interactions=args.interactions,
             cutoff=args.cutoff,
-            n_gaussians=args.num_gaussians,
+            n_gaussian_double=args.num_gaussian_double,
+            n_gaussian_triple=args.num_gaussian_triple,
+            n_theta=args.num_theta,
+            zeta=args.zeta,
             cutoff_network=cutoff_network,
-            max_zeta=args.max_zeta,
-            n_zeta=args.n_zeta,
             normalize_filter=args.normalize_filter,
+            coupled_interactions=args.share_weights,
         )
 
     else:
