@@ -145,11 +145,11 @@ class CFConvTriple(nn.Module):
         _, _, Nbr_tirple = neighbors_j.size()
         nbh_j = neighbors_j.reshape(-1, At * Nbr_tirple, 1)
         nbh_j = nbh_j.expand(-1, -1, y.size(2))
-        r_ij = r_ij.view(-1, At * Nbr_tirple, 1)
+        # r_ij = r_ij.view(-1, At * Nbr_tirple, 1)
 
         nbh_k = neighbors_k.reshape(-1, At * Nbr_tirple, 1)
         nbh_k = nbh_k.expand(-1, -1, y.size(2))
-        r_ik = r_ik.view(-1, At * Nbr_tirple, 1)
+        # r_ik = r_ik.view(-1, At * Nbr_tirple, 1)
         # get j and k neighbors of i. Add these atomic embeddings.
         y_triple_j = torch.gather(y, 1, nbh_j)
         y_triple_k = torch.gather(y, 1, nbh_k)
