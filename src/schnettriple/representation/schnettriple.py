@@ -244,7 +244,7 @@ class SchNetTriple(nn.Module):
             n_gaussian=n_gaussian_double,
             centered=False,
         )
-        self.radial_filter_double = GaussianFilter(
+        self.radial_filter_triple = GaussianFilter(
             start=0.001,
             stop=cutoff - 0.5,
             n_gaussian=n_gaussian_triple,
