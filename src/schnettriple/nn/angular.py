@@ -44,14 +44,21 @@ class ThetaDistribution(nn.Module):
             theta distribution with (B x At x Nbr_triple x n_theta) of shape.
         """
         # diff theta
-        diff_theta = (
-            torch.arccos(cos_theta)[:, :, :, None]
-            - self.offset_theta[None, None, None, :]
+        # diff_theta = (
+        #     torch.arccos(cos_theta)[:, :, :, None]
+        #     - self.offset_theta[None, None, None, :]
+        # )
+        # # calculate theta_filters
+        # theta_distribution = 2 ** (1 - self.zeta) * torch.pow(
+        #     1.0 + torch.cos(diff_theta), self.zeta
+        # )
+        diff_cos = cos_theta[:, :, :, None] * torch.cos(
+            self.offset_theta[None, None, None, :]
+        ) + torch.sqrt(1 - cos_theta ** 2)[:, :, :, None] * torch.sin(
+            self.offset_theta[None, None, None, :]
         )
         # calculate theta_filters
-        theta_distribution = 2 ** (1 - self.zeta) * torch.pow(
-            1.0 + torch.cos(diff_theta), self.zeta
-        )
+        theta_distribution = 2 ** (1 - 8.0) * torch.pow(1.0 + diff_cos, 8.0)
 
         return theta_distribution
 
@@ -113,9 +120,9 @@ class AngularDistribution(nn.Module):
         Returns
         -------
         angular_distribution : torch.Tensor
-            angular distribution with (B x At x Nbr x n_angular_feature) of shape.
+            angular distribution with (B x At x Nbr_triple x n_angular_feature) of shape.
         """
-        B, At, Nbr = r_ij.size()
+        B, At, Nbr_triple = r_ij.size()
         # calculate radial_filter
         radial_filter = f_ij * f_ik
 
@@ -136,6 +143,6 @@ class AngularDistribution(nn.Module):
             angular_filter[:, :, :, :, None] * radial_filter[:, :, :, None, :]
         )
         # reshape (B x At x Nbr x n_filter_feature)
-        angular_distribution = angular_distribution.view(B, At, Nbr, -1)
+        angular_distribution = angular_distribution.view(B, At, Nbr_triple, -1)
 
         return angular_distribution
