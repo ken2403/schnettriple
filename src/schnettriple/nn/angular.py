@@ -123,8 +123,8 @@ class AngularDistribution(nn.Module):
         cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) - torch.pow(r_jk, 2)) / (
             2.0 * r_ij * r_ik
         )
-        # if triple_mask is not None:
-        #     cos_theta[triple_mask == 0] = 0.0
+        if triple_mask is not None:
+            cos_theta[triple_mask == 0] = 0.0
         angular_filter = self.theta_filter(cos_theta)
 
         if triple_mask is not None:
