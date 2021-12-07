@@ -58,7 +58,7 @@ class ThetaDistribution(nn.Module):
             self.offset_theta[None, None, None, :]
         )
         # calculate theta_filters
-        theta_distribution = 2 ** (1 - 8.0) * torch.pow(1.0 + diff_cos, 8.0)
+        theta_distribution = 2 ** (1 - self.zeta) * torch.pow(1.0 + diff_cos, self.zeta)
 
         return theta_distribution
 
