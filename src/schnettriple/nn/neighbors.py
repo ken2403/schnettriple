@@ -1,8 +1,9 @@
 import torch
+from torch import Tensor
 from torch import nn
 
 
-__all__ = ["TriplesDistances"]
+__all__ = ["TriplesDistances", "GaussianFilter"]
 
 
 def triple_distances(
@@ -18,32 +19,39 @@ def triple_distances(
     Get all distances between atoms forming a triangle with the central atoms.
     Required e.g. for angular symmetry functions.
 
+    B   :  Batch size
+    At  :  Total number of atoms in the batch
+    Nbr_double :  Total number of neighbors of each atom
+    Nbr_triple :  Total number of triple neighbors of each atom
+
     Parameters
     ----------
     positions : torch.Tensor
-        Atomic positions
+        Atomic positions with (B x At x 3) shape.
     neighbors_j : torch.Tensor
-        Indices of first neighbor in triangle
+        Indices of first neighbor in triangle with (Bx At x Nbr_triple) shape.
     neighbors_k : torch.Tensor
-        Indices of second neighbor in triangle
+        Indices of second neighbor in triangle with (Bx At x Nbr_triple) shape.
     offset_idx_j : torch.Tensor
-        Indices for offets of neighbors j (for PBC)
+        Indices for offets of neighbors j (for PBC) with (Bx At x Nbr_triple x 3) shape.
     offset_idx_k : torch.Tensor
-        Indices for offets of neighbors k (for PBC)
+        Indices for offets of neighbors k (for PBC) with (Bx At x Nbr_triple x 3) shape.
     cell : torch.tensor, optional
-        periodic cell of (N_b x 3 x 3) shape.
+        periodic cell of (B x 3 x 3) shape.
     cell_offsets : torch.Tensor, optional
-        offset of atom in cell coordinates with (N_b x N_at x N_nbh x 3) shape.
+        offset of atom in cell coordinates with (Bx At x Nbr_triple x 3) shape.
 
     Returns
     -------
-    torch.Tensor
+    r_ij : torch.Tensor
         Distance between central atom and neighbor j
-    torch.Tensor
+        with (Bx At x Nbr_triple) shape.
+    r_ik : torch.Tensor
         Distance between central atom and neighbor k
-    torch.Tensor
-            Distance between neighbors
-
+        with (Bx At x Nbr_triple) shape.
+    r_jk : torch.Tensor
+        Distance between neighbors j and k
+        with (Bx At x Nbr_triple) shape.
     """
     nbatch, _, _ = neighbors_k.size()
     idx_m = torch.arange(nbatch, device=positions.device, dtype=torch.long)[
@@ -121,29 +129,31 @@ class TriplesDistances(nn.Module):
         Parameters
         ----------
         positions : torch.Tensor
-            Atomic positions
+            Atomic positions with (B x At x 3) shape.
         neighbors_j : torch.Tensor
-            Indices of first neighbor in triangle
+            Indices of first neighbor in triangle with (Bx At x Nbr_triple) shape.
         neighbors_k : torch.Tensor
-            Indices of second neighbor in triangle
+            Indices of second neighbor in triangle with (Bx At x Nbr_triple) shape.
         offset_idx_j : torch.Tensor
-            Indices for offets of neighbors j (for PBC)
+            Indices for offets of neighbors j (for PBC) with (Bx At x Nbr_triple x 3) shape.
         offset_idx_k : torch.Tensor
-            Indices for offets of neighbors k (for PBC)
+            Indices for offets of neighbors k (for PBC) with (Bx At x Nbr_triple x 3) shape.
         cell : torch.tensor, optional
-            periodic cell of (N_b x 3 x 3) shape.
+            periodic cell of (B x 3 x 3) shape.
         cell_offsets : torch.Tensor, optional
-            offset of atom in cell coordinates with (N_b x N_at x N_nbh x 3) shape.
+            offset of atom in cell coordinates with (Bx At x Nbr_triple x 3) shape.
 
         Returns
         -------
-        torch.Tensor
+        r_ij : torch.Tensor
             Distance between central atom and neighbor j
-        torch.Tensor
+            with (Bx At x Nbr_triple) shape.
+        r_ik : torch.Tensor
             Distance between central atom and neighbor k
-        torch.Tensor
-            Distance between neighbors
-
+            with (Bx At x Nbr_triple) shape.
+        r_jk : torch.Tensor
+            Distance between neighbors j and k
+            with (Bx At x Nbr_triple) shape.
         """
         return triple_distances(
             positions,
@@ -153,4 +163,105 @@ class TriplesDistances(nn.Module):
             offset_idx_k,
             cell,
             cell_offsets,
+        )
+
+
+def gaussian_filter(distances, offsets, widths, centered=False):
+    """
+    Filtered interatomic distance values using Gaussian functions.
+
+    B   :  Batch size
+    At  :  Total number of atoms in the batch
+    Nbr :  Total number of neighbors of each atom
+    G   :  Filtered features
+
+    Parameters
+    ----------
+    distances : torch.Tensor
+        interatomic distances of (B x At x Nbr) shape.
+    offsets : torch.Tensor
+        offsets values of Gaussian functions.
+    widths : torch.Tensor
+        width values of Gaussian functions.
+    centered : bool, default=False
+        If True, Gaussians are centered at the origin and the offsets are used
+        to as their widths.
+
+    Returns
+    -------
+    filtered_distances : torch.Tensor
+        filtered distances of (B x At x Nbr x G) shape.
+
+    References
+    ----------
+    .. [1] https://github.com/atomistic-machine-learning/schnetpack/blob/67226795af55719a7e4565ed773881841a94d130/src/schnetpack/nn/acsf.py
+    """
+    if centered:
+        # if Gaussian functions are centered, use offsets to compute widths
+        eta = 0.5 / torch.pow(offsets, 2)
+        # if Gaussian functions are centered, no offset is subtracted
+        diff = distances[:, :, :, None]
+
+    else:
+        # compute width of Gaussian functions (using an overlap of 1 STDDEV)
+        eta = 0.5 / torch.pow(widths, 2)
+        # Use advanced indexing to compute the individual components
+        diff = distances[:, :, :, None] - offsets[None, None, None, :]
+
+    # compute smear distance values
+    filtered_distances = torch.exp(-eta * torch.pow(diff, 2))
+    return filtered_distances
+
+
+class GaussianFilter(nn.Module):
+    """
+    From inter-atomic distaces, calculates the filtered distances.
+
+    Attributes
+    ----------
+    start : float, default=0.5
+        center of first Gaussian function, :math:`\mu_0`.
+    stop : float, default=6.0
+        center of last Gaussian function, :math:`\mu_{N_g}`
+    n_gaussians : int, default=100
+        total number of Gaussian functions, :math:`N_g`.
+    centered : bool, default=False
+        If False, Gaussian's centered values are varied at the offset values and the width value is constant.
+    """
+
+    def __init__(
+        self,
+        start: float = 0.5,
+        stop: float = 6.0,
+        n_gaussian: int = 100,
+        centered: bool = False,
+    ) -> None:
+        super().__init__()
+        offsets = torch.linspace(start=start, end=stop, steps=n_gaussian)
+        widths = torch.FloatTensor((offsets[1] - offsets[0]) * torch.ones_like(offsets))
+        self.register_buffer("offset", offsets, persistent=True)
+        self.register_buffer("width", widths, persistent=True)
+        self.centered = centered
+
+    def forward(self, distances: Tensor) -> Tensor:
+        """
+        Compute filtered distance values with Gaussian filter.
+
+        B   :  Batch size
+        At  :  Total number of atoms in the batch
+        Nbr :  Total number of neighbors of each atom
+        G   :  Filtered features (n_gaussian)
+
+        Parameters
+        ----------
+        distances : torch.Tensor
+            interatomic distance values of (B x At x Nbr) shape.
+
+        Returns
+        -------
+        filtered_distances : torch.Tensor
+            filtered distances of (B x At x Nbr x G) shape.
+        """
+        return gaussian_filter(
+            distances, offsets=self.offset, widths=self.width, centered=self.centered
         )
