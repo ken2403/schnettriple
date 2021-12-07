@@ -171,6 +171,8 @@ class Trainer:
                 train_iter = self.train_loader
 
                 self._model.train()
+                if device.type == "cuda":
+                    scaler = torch.cuda.amp.GradScaler()
                 for train_batch in train_iter:
                     self.optimizer.zero_grad()
 
@@ -179,8 +181,9 @@ class Trainer:
 
                     # move input to gpu, if needed
                     train_batch = {k: v.to(device) for k, v in train_batch.items()}
-                    result = self._model(train_batch)
-                    loss = self.loss_fn(train_batch, result)
+                    with torch.cuda.amp.autocast():
+                        result = self._model(train_batch)
+                        loss = self.loss_fn(train_batch, result)
                     # L1 regularization
                     if regularization:
                         l1_reg = torch.tensor(0.0, requires_grad=True)
@@ -188,9 +191,16 @@ class Trainer:
                             if param.requires_grad:
                                 l1_reg = l1_reg + torch.norm(param, 1)
                         loss = loss + l1_lambda * l1_reg
-                    loss.backward()
-                    self.optimizer.step()
-                    self.step += 1
+                    if device.type == "cuda":
+                        # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
+                        scaler.scale(loss).backward()
+                        # scaler.step() first unscales the gradients of the optimizer's assigned params.
+                        scaler.step(self.optimizer)
+                        # Updates the scale for next iteration.
+                        scaler.update()
+                    else:
+                        loss.backward()
+                        self.optimizer.step()
 
                     for h in self.hooks:
                         h.on_batch_end(self, train_batch, result, loss)
