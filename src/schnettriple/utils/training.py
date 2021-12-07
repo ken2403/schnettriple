@@ -15,7 +15,10 @@ def get_trainer(args, model, train_loader, val_loader, metrics):
     optimizer = Adam(trainable_params, lr=args.lr)
 
     # setup hook and logging
-    hooks = [spk.train.MaxEpochHook(args.max_epochs)]
+    hooks = [
+        spk.train.MaxEpochHook(args.max_epochs),
+        snt.train.hooks.stop.NanStoppingHook(),
+    ]
     if args.max_steps:
         hooks.append(spk.train.MaxStepHook(max_steps=args.max_steps))
 

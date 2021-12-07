@@ -1,4 +1,4 @@
-__version_info__ = (1, 0, 1)
+__version_info__ = (1, 0, 2)
 __version__ = ".".join(map(str, __version_info__))
 """
 (0.1.5)
@@ -41,4 +41,6 @@ __version__ = ".".join(map(str, __version_info__))
 - add polynomial cutoff layer
 (1.0.1)
 - modify angular distribution; not using torch.arccos()
+(1.0.2)
+- add NanStoppingHook
 """
