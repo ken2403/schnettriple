@@ -1,13 +1,13 @@
 import torch
 from torch import nn
 from schnetpack import Properties
-from schnetpack.nn.cutoff import CosineCutoff
 from schnetpack.nn.activations import shifted_softplus
 from schnetpack.nn.neighbors import AtomDistances
 
 from schnettriple.nn.angular import AngularDistribution
 from schnettriple.nn.base import Dense
 from schnettriple.nn.cfconv import CFConvTriple
+from schnettriple.nn.cutoff import CosineCutoff
 from schnettriple.nn.neighbors import TriplesDistances, GaussianFilter
 
 

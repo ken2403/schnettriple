@@ -38,4 +38,5 @@ __version__ = ".".join(map(str, __version_info__))
 - gussian expand した距離の値にneighbor maskを適用する
 (1.0.0)
 - change the use of triple featrues.
+- add polynomial cutoff layer
 """

@@ -4,16 +4,29 @@ from ase.data import atomic_numbers
 import torch.nn as nn
 
 from schnettriple.representation import schnettriple
+from schnettriple.nn.cutoff import CosineCutoff, PolyCutoff
 
 
 __all__ = ["get_representation", "get_output_module", "get_model"]
+
+
+def get_cutoff_by_string(string_cutoff_function):
+    if string_cutoff_function == "cosine":
+        cutoff_network = CosineCutoff
+    elif string_cutoff_function == "poly":
+        cutoff_network = PolyCutoff
+    else:
+        raise NotImplementedError(
+            "cutoff_function {} is unknown".format(string_cutoff_function)
+        )
+    return cutoff_network
 
 
 def get_representation(args, train_loader=None):
     # build representation
     if args.model == "schnet":
 
-        cutoff_network = spk.nn.cutoff.get_cutoff_by_string(args.cutoff_function)
+        cutoff_network = get_cutoff_by_string(args.cutoff_function)
 
         return spk.representation.SchNet(
             n_atom_basis=args.features,

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import os
-import sys
 import torch
 import logging
 import schnetpack as spk
