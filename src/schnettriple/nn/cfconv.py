@@ -102,7 +102,7 @@ class CFConvTriple(nn.Module):
             indices of atom j in tirples with (B x At x Nbr_triple) shape.
         neighbors_k : torch.Tensor
             indices of atom k in tirples with (B x At x Nbr_triple) shape.
-        triple_masks : torch.Tensor
+        triple_mask : torch.Tensor
             mask to filter out non-existing neighbors introduced via padding.
             (B x At x Nbr_triple) of shape.
 
