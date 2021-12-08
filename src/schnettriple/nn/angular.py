@@ -44,21 +44,22 @@ class ThetaDistribution(nn.Module):
             theta distribution with (B x At x Nbr_triple x n_theta) of shape.
         """
         # diff theta
-        # diff_theta = (
-        #     torch.arccos(cos_theta)[:, :, :, None]
-        #     - self.offset_theta[None, None, None, :]
-        # )
-        # # calculate theta_filters
-        # theta_distribution = 2 ** (1 - self.zeta) * torch.pow(
-        #     1.0 + torch.cos(diff_theta), self.zeta
-        # )
-        diff_cos = cos_theta[:, :, :, None] * torch.cos(
-            self.offset_theta[None, None, None, :]
-        ) + torch.sqrt(1 - cos_theta ** 2)[:, :, :, None] * torch.sin(
-            self.offset_theta[None, None, None, :]
+        diff_theta = (
+            torch.arccos(cos_theta)[:, :, :, None]
+            - self.offset_theta[None, None, None, :]
         )
         # calculate theta_filters
-        theta_distribution = 2 ** (1 - self.zeta) * torch.pow(1.0 + diff_cos, self.zeta)
+        theta_distribution = 2 ** (1.0 - self.zeta) * torch.pow(
+            1.0 + torch.cos(diff_theta), self.zeta
+        )
+
+        # diff_cos = cos_theta[:, :, :, None] * torch.cos(
+        #     self.offset_theta[None, None, None, :]
+        # ) + torch.sqrt(1.0 - cos_theta ** 2)[:, :, :, None] * torch.sin(
+        #     self.offset_theta[None, None, None, :]
+        # )
+        # # calculate theta_filters
+        # theta_distribution = 2 ** (1.0 - self.zeta) * torch.pow(1.0 + diff_cos, self.zeta)
 
         return theta_distribution
 
