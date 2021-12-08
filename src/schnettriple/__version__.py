@@ -43,4 +43,5 @@ __version__ = ".".join(map(str, __version_info__))
 - modify angular distribution; not using torch.arccos()
 (1.0.2)
 - add NanStoppingHook
+- optimization of training process
 """
