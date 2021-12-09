@@ -188,8 +188,16 @@ class Trainer:
                         print("before: {}".format(loss))
                         if loss.isnan().any():
                             with open("inputs.pkl", "wb") as tf:
+                                train_batch = {
+                                    k: v.to("cpu").detach().numpy()
+                                    for k, v in train_batch.items()
+                                }
                                 pickle.dump(train_batch, tf)
                             with open("result.pkl", "wb") as tf:
+                                result = {
+                                    k: v.to("cpu").detach().numpy()
+                                    for k, v in result.items()
+                                }
                                 pickle.dump(result, tf)
                         # L1 regularization
                         if regularization:
