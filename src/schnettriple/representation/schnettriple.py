@@ -361,8 +361,8 @@ class SchNetTriple(nn.Module):
         f_ij = self.radial_filter_triple(r_ijk[0])
         f_ik = self.radial_filter_triple(r_ijk[1])
         # f_jk = self.radial_filter_triple(r_ijk[2])
-        f_ij = f_ij * triple_mask.unsqueeze(-1)
-        f_ik = f_ik * triple_mask.unsqueeze(-1)
+        # f_ij = f_ij * triple_mask.unsqueeze(-1)
+        # f_ik = f_ik * triple_mask.unsqueeze(-1)
 
         # extract angular features
         triple_ijk = self.triple_distribution(
