@@ -182,6 +182,9 @@ class Trainer:
                     # move input to gpu, if needed
                     train_batch = {k: v.to(device) for k, v in train_batch.items()}
                     with torch.cuda.amp.autocast():
+
+                        torch.autograd.detect_anomaly()
+
                         result = self._model(train_batch)
                         loss = self.loss_fn(train_batch, result)
                     # L1 regularization
