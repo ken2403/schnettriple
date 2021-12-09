@@ -21,11 +21,11 @@ class ThetaDistribution(nn.Module):
     def __init__(self, n_theta=10, zeta=8.0):
         super(ThetaDistribution, self).__init__()
         offset_theta = torch.linspace(0, np.pi, n_theta)
-        self.register_buffer("zeta", torch.FloatTensor([zeta]))
-        self.register_buffer("offset_theta", offset_theta)
+        # self.register_buffer("zeta", torch.FloatTensor([zeta]))
+        # self.register_buffer("offset_theta", offset_theta)
 
-        # zeta = torch.tensor(zeta)
-        # self.register_buffer("zetas", zeta)
+        zeta = torch.tensor(zeta)
+        self.register_buffer("zetas", zeta)
 
     def forward(self, cos_theta):
         """
@@ -56,26 +56,26 @@ class ThetaDistribution(nn.Module):
         #     1.0 + torch.cos(diff_theta), self.zeta
         # )
 
-        diff_cos = cos_theta[:, :, :, None] * torch.cos(
-            self.offset_theta[None, None, None, :]
-        ) + torch.sqrt(1.0 - cos_theta ** 2 + 1.0e-7)[:, :, :, None] * torch.sin(
-            self.offset_theta[None, None, None, :]
-        )
-        # calculate theta_filters
-        theta_distribution = 2 ** (1.0 - self.zeta) * torch.pow(
-            1.0 + diff_cos, self.zeta
-        )
-
+        # diff_cos = cos_theta[:, :, :, None] * torch.cos(
+        #     self.offset_theta[None, None, None, :]
+        # ) + torch.sqrt(1.0 - cos_theta ** 2 + 1.0e-7)[:, :, :, None] * torch.sin(
+        #     self.offset_theta[None, None, None, :]
+        # )
         # # calculate theta_filters
-        # theta_pos = [
-        #     2 ** (1 - zeta) * ((1.0 - cos_theta) ** zeta).unsqueeze(-1)
-        #     for zeta in self.zetas
-        # ]
-        # theta_neg = [
-        #     2 ** (1 - zeta) * ((1.0 + cos_theta) ** zeta).unsqueeze(-1)
-        #     for zeta in self.zetas
-        # ]
-        # theta_distribution = torch.cat(theta_pos + theta_neg, -1)
+        # theta_distribution = 2 ** (1.0 - self.zeta) * torch.pow(
+        #     1.0 + diff_cos, self.zeta
+        # )
+
+        # calculate theta_filters
+        theta_pos = [
+            2 ** (1 - zeta) * ((1.0 - cos_theta) ** zeta).unsqueeze(-1)
+            for zeta in self.zetas
+        ]
+        theta_neg = [
+            2 ** (1 - zeta) * ((1.0 + cos_theta) ** zeta).unsqueeze(-1)
+            for zeta in self.zetas
+        ]
+        theta_distribution = torch.cat(theta_pos + theta_neg, -1)
 
         return theta_distribution
 
