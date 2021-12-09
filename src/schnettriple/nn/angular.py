@@ -58,7 +58,7 @@ class ThetaDistribution(nn.Module):
 
         diff_cos = cos_theta[:, :, :, None] * torch.cos(
             self.offset_theta[None, None, None, :]
-        ) + torch.sqrt(1.0 - cos_theta ** 2 + 1.0e-10)[:, :, :, None] * torch.sin(
+        ) + torch.sqrt(1.0 - cos_theta ** 2 + 1.0e-7)[:, :, :, None] * torch.sin(
             self.offset_theta[None, None, None, :]
         )
         # calculate theta_filters
