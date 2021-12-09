@@ -357,12 +357,12 @@ class SchNetTriple(nn.Module):
 
         # expand interatomic distances (for example, GaussianFilter)
         f_double = self.radial_filter_double(r_double)
-        f_double[neighbor_mask == 0] = 0.0
+        f_double = f_double * neighbor_mask
         f_ij = self.radial_filter_triple(r_ijk[0])
         f_ik = self.radial_filter_triple(r_ijk[1])
         # f_jk = self.radial_filter_triple(r_ijk[2])
-        f_ij[triple_mask == 0] = 0.0
-        f_ik[triple_mask == 0] = 0.0
+        f_ij = f_ij * triple_mask
+        f_ik = f_ik * triple_mask
 
         # extract angular features
         triple_ijk = self.triple_distribution(
