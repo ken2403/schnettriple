@@ -1,6 +1,7 @@
 import os
 import sys
 import numpy as np
+from schnetpack import train
 import torch
 
 
@@ -185,6 +186,9 @@ class Trainer:
                         result = self._model(train_batch)
                         loss = self.loss_fn(train_batch, result)
                         print("before: {}".format(loss))
+                        if loss.isnan().any():
+                            print(train_batch)
+                            print(result)
                         # L1 regularization
                         if regularization:
                             l1_reg = torch.tensor(0.0, requires_grad=True)
