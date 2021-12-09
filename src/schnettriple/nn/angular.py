@@ -56,7 +56,7 @@ class ThetaDistribution(nn.Module):
         #     1.0 + torch.cos(diff_theta), self.zeta
         # )
         sin_theta = torch.sqrt(1.0 - cos_theta ** 2 + 1e-5)
-        sin_theta[cos_theta == -1] = 0.0
+        sin_theta = sin_theta * (cos_theta != -1)
         diff_cos = cos_theta[:, :, :, None] * torch.cos(
             self.offset_theta[None, None, None, :]
         ) + sin_theta[:, :, :, None] * torch.sin(self.offset_theta[None, None, None, :])
