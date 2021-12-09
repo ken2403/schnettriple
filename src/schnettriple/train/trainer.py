@@ -183,8 +183,8 @@ class Trainer:
                     train_batch = {k: v.to(device) for k, v in train_batch.items()}
                     with torch.cuda.amp.autocast():
                         result = self._model(train_batch)
-                        print(result)
                         loss = self.loss_fn(train_batch, result)
+                        print("before: {}".format(loss))
                         # L1 regularization
                         if regularization:
                             l1_reg = torch.tensor(0.0, requires_grad=True)
@@ -192,6 +192,7 @@ class Trainer:
                                 if param.requires_grad:
                                     l1_reg = l1_reg + torch.norm(param, 1)
                             loss = loss + l1_lambda * l1_reg
+                            print("after: {}".format(loss))
                     if device.type == "cuda":
                         # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
                         scaler.scale(loss).backward()
