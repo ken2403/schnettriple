@@ -1,7 +1,7 @@
 import os
 import sys
+import pickle
 import numpy as np
-from schnetpack import train
 import torch
 
 
@@ -187,8 +187,10 @@ class Trainer:
                         loss = self.loss_fn(train_batch, result)
                         print("before: {}".format(loss))
                         if loss.isnan().any():
-                            print(train_batch)
-                            print(result)
+                            with open("inputs.pkl", "wb") as tf:
+                                pickle.dump(train_batch, tf)
+                            with open("result.pkl", "wb") as tf:
+                                pickle.dump(result, tf)
                         # L1 regularization
                         if regularization:
                             l1_reg = torch.tensor(0.0, requires_grad=True)
