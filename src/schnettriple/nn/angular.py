@@ -20,7 +20,7 @@ class ThetaDistribution(nn.Module):
 
     def __init__(self, n_theta=10, zeta=8.0):
         super(ThetaDistribution, self).__init__()
-        offset_theta = torch.linspace(0, np.pi, n_theta)
+        # offset_theta = torch.linspace(0, np.pi, n_theta)
         # self.register_buffer("zeta", torch.FloatTensor([zeta]))
         # self.register_buffer("offset_theta", offset_theta)
 
