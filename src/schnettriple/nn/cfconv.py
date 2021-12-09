@@ -161,8 +161,8 @@ class CFConvTriple(nn.Module):
         y_triple = self.agg(y_triple, triple_mask)
 
         # concatinate double and triple embeddings
-        y = torch.cat((y_double, y_triple), dim=2)
+        y_total = torch.cat((y_double, y_triple), dim=2)
         # output embbedings through Dense layer
-        y = self.f2out(y)
+        y_total = self.f2out(y_total)
 
         return y
