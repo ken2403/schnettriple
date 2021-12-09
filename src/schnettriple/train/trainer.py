@@ -183,6 +183,7 @@ class Trainer:
                     train_batch = {k: v.to(device) for k, v in train_batch.items()}
                     with torch.cuda.amp.autocast():
                         result = self._model(train_batch)
+                        print(result)
                         loss = self.loss_fn(train_batch, result)
                         # L1 regularization
                         if regularization:
