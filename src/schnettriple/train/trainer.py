@@ -6,21 +6,34 @@ import torch
 
 
 class Trainer:
-    r"""Class to train a model.
+    """Class to train a model.
     This contains an internal training loop which takes care of validation and can be
     extended with custom functionality using hooks.
-    Args:
-       model_path (str): path to the model directory.
-       model (torch.Module): model to be trained.
-       loss_fn (callable): training loss function.
-       optimizer (torch.optim.optimizer.Optimizer): training optimizer.
-       train_loader (torch.utils.data.DataLoader): data loader for training set.
-       validation_loader (torch.utils.data.DataLoader): data loader for validation set.
-       keep_n_checkpoints (int, optional): number of saved checkpoints.
-       checkpoint_interval (int, optional): intervals after which checkpoints is saved.
-       hooks (list, optional): hooks to customize training process.
-       loss_is_normalized (bool, optional): if True, the loss per data point will be
-           reported. Otherwise, the accumulated loss is reported.
+
+    Returns
+    -------
+    model_path : str
+        path to the model directory.
+    model : torch.nn.Module
+        model to be trained.
+    loss_fn : callable
+        training loss function.
+    optimizer : torch.optim.optimizer.Optimizer
+        training optimizer.
+    train_loader : torch.utils.data.DataLoader
+        data loader for training set.
+    validation_loader : torch.utils.data.DataLoader
+        data loader for validation set.
+    keep_n_checkpoints : int, default=3
+        number of saved checkpoints.
+    checkpoint_interval : int, default=10
+        intervals after which checkpoints is saved.
+    validation_interval : int, default=1
+        intervals after which validation calculation is saved.
+    hooks : list of schnetpack.train.hooks.Hook, optional
+        hooks to customize training process.
+    loss_is_normalized : bool, default=True
+        if True, the loss per data point will be reported. Otherwise, the accumulated loss is reported.
     """
 
     def __init__(
@@ -139,11 +152,19 @@ class Trainer:
         self.state_dict = torch.load(chkpt)
 
     def train(self, device, n_epochs=sys.maxsize, regularization=False, l1_lambda=0.01):
-        """Train the model for the given number of epochs on a specified device.
-        Args:
-            device (torch.torch.Device): device on which training takes place.
-            n_epochs (int): number of training epochs.
-        Note: Depending on the `hooks`, training can stop earlier than `n_epochs`.
+        """
+        Train the model for the given number of epochs on a specified device.
+
+        Parameters
+        ----------
+        device : torch.torch.Device
+            device on which training takes place.
+        n_epochs : int
+            number of training epochs.
+
+        Note
+        ----
+        Depending on the `hooks`, training can stop earlier than `n_epochs`.
         """
         self._model.to(device)
         self._optimizer_to(device)
