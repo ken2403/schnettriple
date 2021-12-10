@@ -151,7 +151,14 @@ class Trainer:
         )
         self.state_dict = torch.load(chkpt)
 
-    def train(self, device, n_epochs=sys.maxsize, regularization=False, l1_lambda=0.01):
+    def train(
+        self,
+        device,
+        n_epochs=sys.maxsize,
+        regularization=False,
+        l1_lambda=0.01,
+        max_norm=0.25,
+    ):
         """
         Train the model for the given number of epochs on a specified device.
 
@@ -161,6 +168,10 @@ class Trainer:
             device on which training takes place.
         n_epochs : int
             number of training epochs.
+        l1_lambda : float, default=0.01
+            coefficient of L1 regularization
+        max_norm : float, default=0.25
+            max norm of the gradients
 
         Note
         ----
@@ -232,6 +243,9 @@ class Trainer:
                     if device.type == "cuda":
                         # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
                         scaler.scale(loss).backward()
+                        torch.nn.utils.clip_grad_norm_(
+                            self._model.parameters(), max_norm=max_norm
+                        )
                         # scaler.step() first unscales the gradients of the optimizer's assigned params.
                         scaler.step(self.optimizer)
                         # Updates the scale for next iteration.
