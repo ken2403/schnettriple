@@ -232,10 +232,21 @@ class Trainer:
                                     for k, v in result.items()
                                 }
                                 pickle.dump(result_, tf)
-                            torch.save(prev_model, self.best_model)
+                            torch.save(
+                                prev_model,
+                                os.path.join(self.model_path, "prev"),
+                            )
+                            torch.save(
+                                after_update_prev,
+                                os.path.join(self.model_path, "after_prev"),
+                            )
                             torch.save(
                                 self.optimizer,
                                 os.path.join(self.model_path, "optim"),
+                            )
+                            torch.save(
+                                prev_loss,
+                                os.path.join(self.model_path, "prev_loss"),
                             )
                         prev_model = copy.deepcopy(self._model)
                         # L1 regularization
@@ -246,6 +257,7 @@ class Trainer:
                                     l1_reg = l1_reg + torch.norm(param, 1)
                             loss = loss + l1_lambda * l1_reg
                             print("after: {}".format(loss))
+                            prev_loss = copy.deepcopy(loss)
                     if device.type == "cuda":
                         # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
                         scaler.scale(loss).backward()
@@ -256,6 +268,7 @@ class Trainer:
                         scaler.step(self.optimizer)
                         # Updates the scale for next iteration.
                         scaler.update()
+                        after_update_prev = copy.deepcopy(self._model)
                     else:
                         loss.backward()
                         self.optimizer.step()
