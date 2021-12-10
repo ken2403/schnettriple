@@ -1,13 +1,15 @@
 import logging
+import numpy as np
 import schnetpack as spk
 from ase.data import atomic_numbers
 import torch.nn as nn
 
 from schnettriple.representation import schnettriple
 from schnettriple.nn.cutoff import CosineCutoff, PolyCutoff
+from schnettriple.utils.script_utils import ScriptError
 
 
-__all__ = ["get_representation", "get_output_module", "get_model"]
+__all__ = ["get_representation", "get_output_module", "get_model", "count_params"]
 
 
 def _get_cutoff_by_string(string_cutoff_function):
@@ -107,9 +109,7 @@ def get_output_module_by_str(module_str):
     elif module_str == "electronic_spatial_sxtent":
         return spk.atomistic.ElectronicSpatialExtent
     else:
-        raise spk.utils.ScriptError(
-            "{} is not a valid output " "module!".format(module_str)
-        )
+        raise ScriptError("{} is not a valid output " "module!".format(module_str))
 
 
 def get_output_module(args, representation, mean, stddev, atomref):
@@ -233,9 +233,27 @@ def get_model(args, train_loader, mean, stddev, atomref, logging=None):
         if args.parallel:
             model = nn.DataParallel(model)
         if logging:
-            logging.info(
-                "The model you built has: %d parameters" % spk.utils.count_params(model)
-            )
+            logging.info("The model you built has: %d parameters" % count_params(model))
         return model
     else:
-        raise spk.utils.ScriptError("Invalid mode selected: {}".format(args.mode))
+        raise ScriptError("Invalid mode selected: {}".format(args.mode))
+
+
+def count_params(model):
+    """
+    This function takes a model as an input and returns the number of
+    trainable parameters.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        model for which you want to count the trainable parameters.
+
+    Returns
+    -------
+    params : int
+        number of trainable parameters for the model.
+    """
+    model_parameters = filter(lambda p: p.requires_grad, model.parameters())
+    params = sum([np.prod(p.size()) for p in model_parameters])
+    return params

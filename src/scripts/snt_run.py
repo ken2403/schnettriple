@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 import os
+import argparse
 import torch
 import logging
 import schnetpack as spk
 from schnetpack.utils import (
-    ScriptError,
     setup_run,
     get_divide_by_atoms,
 )
 from schnetpack.utils.script_utils.settings import get_environment_provider
-from schnetpack.utils.script_utils.parsing import build_parser
 
 from schnettriple.utils.evaluation import evaluate
 from schnettriple.utils.data import get_dataset, get_statistics, get_loaders
 from schnettriple.utils.model import get_model
 from schnettriple.utils.training import get_metrics, get_trainer
+from schnettriple.utils.script_utils import ScriptError, read_from_json
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
@@ -117,10 +117,9 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = build_parser()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("argsjsonpath", help="json file path")
     args = parser.parse_args()
-
-    if args.mode == "from_json":
-        args = spk.utils.read_from_json(args.json_path)
+    args = read_from_json(args.argsjsonpath)
 
     main(args)
