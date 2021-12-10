@@ -1,6 +1,7 @@
 import os
 import sys
 import pickle
+import copy
 import numpy as np
 import torch
 
@@ -236,7 +237,7 @@ class Trainer:
                                 self.optimizer,
                                 os.path.join(self.model_path, "optim"),
                             )
-                        prev_model = self._model
+                        prev_model = copy.deepcopy(self._model)
                         # L1 regularization
                         if regularization:
                             l1_reg = torch.tensor(0.0, requires_grad=True)
