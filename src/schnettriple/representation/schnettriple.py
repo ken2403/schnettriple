@@ -240,13 +240,13 @@ class SchNetTriple(nn.Module):
 
         # layer for expanding interatomic distances in a basis
         self.radial_filter_double = GaussianFilter(
-            start=0.001,
+            start=0.0,
             stop=cutoff - 0.5,
             n_gaussian=n_gaussian_double,
             centered=False,
         )
         self.radial_filter_triple = GaussianFilter(
-            start=0.001,
+            start=0.0,
             stop=cutoff - 0.5,
             n_gaussian=n_gaussian_triple,
             centered=False,
