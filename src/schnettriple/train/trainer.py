@@ -231,7 +231,12 @@ class Trainer:
                                     for k, v in result.items()
                                 }
                                 pickle.dump(result_, tf)
-                            torch.save(self._model, self.best_model)
+                            torch.save(prev_model, self.best_model)
+                            torch.save(
+                                self.optimizer,
+                                os.path.join(self.model_path, "optim"),
+                            )
+                        prev_model = self._model
                         # L1 regularization
                         if regularization:
                             l1_reg = torch.tensor(0.0, requires_grad=True)
