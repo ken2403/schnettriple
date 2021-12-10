@@ -219,7 +219,22 @@ class Trainer:
                         result = self._model(train_batch)
                         loss = self.loss_fn(train_batch, result)
                         print("before: {}".format(loss))
+                        # L1 regularization
+                        if regularization:
+                            l1_reg = torch.tensor(0.0, requires_grad=True)
+                            for param in self._model.parameters():
+                                if param.requires_grad:
+                                    l1_reg = l1_reg + torch.norm(param, 1)
+                            loss = loss + l1_lambda * l1_reg
+                            print("after: {}".format(loss))
+
                         if loss.isnan().any():
+                            self._model = prev_model
+                            trainable_params = filter(
+                                lambda p: p.requires_grad, self._model.parameters()
+                            )
+                            self.optimizer = torch.optim.Adam(trainable_params)
+                            self.optimizer.load_state_dict(prev_optim.state_dict())
                             with open("inputs.pkl", "wb") as tf:
                                 train_batch_ = {
                                     k: v.to("cpu").detach().numpy()
@@ -237,33 +252,23 @@ class Trainer:
                                 os.path.join(self.model_path, "prev"),
                             )
                             torch.save(
-                                after_update_prev,
-                                os.path.join(self.model_path, "after_prev"),
-                            )
-                            torch.save(
                                 self.optimizer,
                                 os.path.join(self.model_path, "optim"),
                             )
-                        prev_model = copy.deepcopy(self._model)
-                        # L1 regularization
-                        if regularization:
-                            l1_reg = torch.tensor(0.0, requires_grad=True)
-                            for param in self._model.parameters():
-                                if param.requires_grad:
-                                    l1_reg = l1_reg + torch.norm(param, 1)
-                            loss = loss + l1_lambda * l1_reg
-                            print("after: {}".format(loss))
+                        else:
+                            prev_model = copy.deepcopy(self._model)
+                            prev_optim = copy.deepcopy(self.optimizer)
+
                     if device.type == "cuda":
                         # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
                         scaler.scale(loss).backward()
-                        torch.nn.utils.clip_grad_norm_(
-                            self._model.parameters(), max_norm=max_norm
-                        )
+                        # torch.nn.utils.clip_grad_norm_(
+                        #     self._model.parameters(), max_norm=max_norm
+                        # )
                         # scaler.step() first unscales the gradients of the optimizer's assigned params.
                         scaler.step(self.optimizer)
                         # Updates the scale for next iteration.
                         scaler.update()
-                        after_update_prev = copy.deepcopy(self._model)
                     else:
                         loss.backward()
                         self.optimizer.step()
