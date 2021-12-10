@@ -219,17 +219,11 @@ class Trainer:
                         result = self._model(train_batch)
                         loss = self.loss_fn(train_batch, result)
                         print("before: {}".format(loss))
-                        # L1 regularization
-                        if regularization:
-                            l1_reg = torch.tensor(0.0, requires_grad=True)
-                            for param in self._model.parameters():
-                                if param.requires_grad:
-                                    l1_reg = l1_reg + torch.norm(param, 1)
-                            loss = loss + l1_lambda * l1_reg
-                            print("after: {}".format(loss))
 
                         if loss.isnan().any():
                             self._model = prev_model
+                            result = self._model(train_batch)
+                            loss = self.loss_fn(train_batch, result)
                             trainable_params = filter(
                                 lambda p: p.requires_grad, self._model.parameters()
                             )
@@ -241,12 +235,12 @@ class Trainer:
                                     for k, v in train_batch.items()
                                 }
                                 pickle.dump(train_batch_, tf)
-                            with open("result.pkl", "wb") as tf:
-                                result_ = {
-                                    k: v.to("cpu").detach().numpy()
-                                    for k, v in result.items()
-                                }
-                                pickle.dump(result_, tf)
+                            # with open("result.pkl", "wb") as tf:
+                            #     result_ = {
+                            #         k: v.to("cpu").detach().numpy()
+                            #         for k, v in result.items()
+                            #     }
+                            #     pickle.dump(result_, tf)
                             torch.save(
                                 prev_model,
                                 os.path.join(self.model_path, "prev"),
@@ -262,6 +256,15 @@ class Trainer:
                         else:
                             prev_model = copy.deepcopy(self._model)
                             prev_optim = copy.deepcopy(self.optimizer)
+
+                        # L1 regularization
+                        if regularization:
+                            l1_reg = torch.tensor(0.0, requires_grad=True)
+                            for param in self._model.parameters():
+                                if param.requires_grad:
+                                    l1_reg = l1_reg + torch.norm(param, 1)
+                            loss = loss + l1_lambda * l1_reg
+                            print("after: {}".format(loss))
 
                     if device.type == "cuda":
                         # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
