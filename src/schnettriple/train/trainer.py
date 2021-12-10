@@ -188,17 +188,17 @@ class Trainer:
                         print("before: {}".format(loss))
                         if loss.isnan().any():
                             with open("inputs.pkl", "wb") as tf:
-                                train_batch = {
+                                train_batch_ = {
                                     k: v.to("cpu").detach().numpy()
                                     for k, v in train_batch.items()
                                 }
-                                pickle.dump(train_batch, tf)
+                                pickle.dump(train_batch_, tf)
                             with open("result.pkl", "wb") as tf:
-                                result = {
+                                result_ = {
                                     k: v.to("cpu").detach().numpy()
                                     for k, v in result.items()
                                 }
-                                pickle.dump(result, tf)
+                                pickle.dump(result_, tf)
                         # L1 regularization
                         if regularization:
                             l1_reg = torch.tensor(0.0, requires_grad=True)
