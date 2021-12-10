@@ -257,7 +257,7 @@ class Trainer:
                                     l1_reg = l1_reg + torch.norm(param, 1)
                             loss = loss + l1_lambda * l1_reg
                             print("after: {}".format(loss))
-                            prev_loss = copy.deepcopy(loss)
+                            prev_loss = loss.copy()
                     if device.type == "cuda":
                         # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
                         scaler.scale(loss).backward()
