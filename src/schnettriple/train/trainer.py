@@ -244,10 +244,6 @@ class Trainer:
                                 self.optimizer,
                                 os.path.join(self.model_path, "optim"),
                             )
-                            torch.save(
-                                prev_loss,
-                                os.path.join(self.model_path, "prev_loss"),
-                            )
                         prev_model = copy.deepcopy(self._model)
                         # L1 regularization
                         if regularization:
@@ -257,7 +253,6 @@ class Trainer:
                                     l1_reg = l1_reg + torch.norm(param, 1)
                             loss = loss + l1_lambda * l1_reg
                             print("after: {}".format(loss))
-                            prev_loss = loss.copy()
                     if device.type == "cuda":
                         # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
                         scaler.scale(loss).backward()
