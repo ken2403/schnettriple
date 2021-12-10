@@ -252,6 +252,10 @@ class Trainer:
                                 os.path.join(self.model_path, "prev"),
                             )
                             torch.save(
+                                after_model,
+                                os.path.join(self.model_path, "after"),
+                            )
+                            torch.save(
                                 self.optimizer,
                                 os.path.join(self.model_path, "optim"),
                             )
@@ -269,6 +273,7 @@ class Trainer:
                         scaler.step(self.optimizer)
                         # Updates the scale for next iteration.
                         scaler.update()
+                        after_model = copy.deepcopy(self._model)
                     else:
                         loss.backward()
                         self.optimizer.step()
