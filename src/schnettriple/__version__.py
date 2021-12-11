@@ -1,4 +1,4 @@
-__version_info__ = (1, 0, 3)
+__version_info__ = (1, 0, 4)
 __version__ = ".".join(map(str, __version_info__))
 """
 (0.1.5)
@@ -46,4 +46,6 @@ __version__ = ".".join(map(str, __version_info__))
 - optimization of training process
 (1.0.3)
 - add script_utils.py and change the usage of script(only from json)
+(1.0.4)
+- multiple with node embedding of neihgbor j and neighbor k.
 """
