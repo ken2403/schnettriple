@@ -149,7 +149,7 @@ class CFConvTriple(nn.Module):
         nbh_k = neighbors_k.reshape(-1, At * Nbr_tirple, 1)
         nbh_k = nbh_k.expand(-1, -1, y.size(2))
         # get j and k neighbors of centered atom i. Multiple these atomic embeddings.
-        y_triple = torch.gather(y, 1, nbh_j) * torch.gather(y, 1, nbh_k)
+        y_triple = torch.gather(y, 1, nbh_j) + torch.gather(y, 1, nbh_k)
         y_triple = y_triple.view(B, At, Nbr_tirple, -1)
 
         # element-wise multiplication, aggregating and Dense layer
