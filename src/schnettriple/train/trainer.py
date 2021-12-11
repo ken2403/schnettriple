@@ -267,8 +267,8 @@ class Trainer:
 
                     if device.type == "cuda":
                         # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
-                        with torch.autograd.detect_anomaly():
-                            scaler.scale(loss).backward()
+                        # with torch.autograd.detect_anomaly():
+                        scaler.scale(loss).backward()
                         # torch.nn.utils.clip_grad_norm_(
                         #     self._model.parameters(), max_norm=max_norm
                         # )

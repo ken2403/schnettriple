@@ -158,7 +158,7 @@ class AngularDistribution(nn.Module):
 
         # calculate theta_filter
         cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) - torch.pow(r_jk, 2)) / (
-            (2.0 * r_ij * r_ik + 1e-9)
+            2.0 * r_ij * r_ik
         )
         if triple_mask is not None:
             cos_theta[triple_mask == 0] = 0.0
