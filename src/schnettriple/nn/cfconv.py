@@ -24,8 +24,6 @@ class CFConvTriple(nn.Module):
         filter block for double propperties.
     filter_network_triple : nn.Module
         filter block for triple properties.
-    cutoff_network : nn.Module, default=None
-        if None, no cut off function is used.
     activation : callable, default=None
         if None, no activation function is used.
     normalize_filter : bool, default=False
@@ -48,16 +46,12 @@ class CFConvTriple(nn.Module):
         self.f2out = Dense(2 * n_filters, n_out, bias=True, activation=activation)
         self.filter_network_double = filter_network_double
         self.filter_network_triple = filter_network_triple
-        # self.cutoff_network = cutoff_network
         self.agg = Aggregate(axis=2, mean=normalize_filter)
 
     def forward(
         self,
         x,
-        r_double,
         f_double,
-        r_ij,
-        r_ik,
         triple_ijk,
         neighbors,
         neighbor_mask,
@@ -112,18 +106,9 @@ class CFConvTriple(nn.Module):
         """
         # pass expanded interactomic distances through filter block (double)
         W_double = self.filter_network_double(f_double)
-        # apply cutoff
-        # if self.cutoff_network is not None:
-        #     C_double = self.cutoff_network(r_double)
-        #     W_double = W_double * C_double.unsqueeze(-1)
 
         # pass triple distribution through filter block (triple)
         W_triple = self.filter_network_triple(triple_ijk)
-        # apply cutoff
-        # if self.cutoff_network is not None:
-        #     C_ij = self.cutoff_network(r_ij)
-        #     C_ik = self.cutoff_network(r_ik)
-        #     W_triple = W_triple * C_ij.unsqueeze(-1) * C_ik.unsqueeze(-1)
 
         # pass initial embeddings through Dense layer
         y = self.in2f(x)
