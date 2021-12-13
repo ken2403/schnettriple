@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from schnetpack.nn.base import Aggregate
+from torch._C import double
 
 from schnettriple.nn.base import Dense
 
@@ -140,6 +141,8 @@ class CFConvTriple(nn.Module):
         # element-wise multiplication, aggregating and Dense layer
         y_double = y_double * W_double
         y_double = self.agg(y_double, neighbor_mask)
+        # residual net
+        y_double = y_double + y
 
         # reshape y for element-wise multiplication by W
         _, _, Nbr_tirple = neighbors_j.size()
@@ -155,6 +158,8 @@ class CFConvTriple(nn.Module):
         # element-wise multiplication, aggregating and Dense layer
         y_triple = y_triple * W_triple
         y_triple = self.agg(y_triple, triple_mask)
+        # residual net
+        y_triple = y_triple + y
 
         # concatinate double and triple embeddings
         y_total = torch.cat((y_double, y_triple), dim=2)

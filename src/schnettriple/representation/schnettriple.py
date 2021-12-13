@@ -6,7 +6,7 @@ from schnetpack.nn.activations import shifted_softplus
 from schnetpack.nn.neighbors import AtomDistances
 
 from schnettriple.nn.angular import AngularDistribution
-from schnettriple.nn.base import Dense
+from schnettriple.nn.base import Dense, FeatureWeighting
 from schnettriple.nn.cfconv import CFConvTriple
 from schnettriple.nn.cutoff import CosineCutoff
 from schnettriple.nn.neighbors import TriplesDistances, GaussianFilter
@@ -77,6 +77,8 @@ class SchNetInteractionTriple(nn.Module):
         )
         # dense layer
         self.dense = Dense(n_atom_basis, n_atom_basis, bias=True, activation=None)
+        # wighting layer
+        self.feature_wighting = FeatureWeighting(n_atom_basis)
 
     def forward(
         self,
@@ -152,8 +154,10 @@ class SchNetInteractionTriple(nn.Module):
             triple_mask=triple_mask,
         )
         v = self.dense(v)
+        x = self.feature_wighting(x)
+        x = x + v
 
-        return v
+        return x
 
 
 class SchNetTriple(nn.Module):
@@ -379,7 +383,7 @@ class SchNetTriple(nn.Module):
             xs = [x]
         # compute interaction block to update atomic embeddings
         for interaction in self.interactions:
-            v = interaction(
+            x = interaction(
                 x=x,
                 r_double=r_double,
                 f_double=f_double,
@@ -392,7 +396,6 @@ class SchNetTriple(nn.Module):
                 neighbors_k=neighbors_k,
                 triple_mask=triple_mask,
             )
-            x = x + v
             if self.return_intermid:
                 xs.append(x)
 
