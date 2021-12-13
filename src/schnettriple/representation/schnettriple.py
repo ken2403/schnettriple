@@ -47,8 +47,6 @@ class SchNetInteractionTriple(nn.Module):
         n_gaussian_triple,
         n_theta,
         n_filters,
-        cutoff,
-        cutoff_network=CosineCutoff,
         normalize_filter=False,
     ):
         super(SchNetInteractionTriple, self).__init__()
@@ -62,8 +60,8 @@ class SchNetInteractionTriple(nn.Module):
             Dense(n_gaussian_triple * n_theta, n_filters, activation=shifted_softplus),
             Dense(n_filters, n_filters, activation=None),
         )
-        # cutoff layer used in interaction block
-        self.cutoff_network = cutoff_network(cutoff)
+        ## cutoff layer used in interaction block
+        # self.cutoff_network = cutoff_network(cutoff)
         # interaction block
         self.cfconv = CFConvTriple(
             n_atom_basis,
@@ -71,7 +69,6 @@ class SchNetInteractionTriple(nn.Module):
             n_atom_basis,
             self.filter_network_double,
             self.filter_network_triple,
-            cutoff_network=self.cutoff_network,
             activation=shifted_softplus,
             normalize_filter=normalize_filter,
         )
@@ -255,6 +252,11 @@ class SchNetTriple(nn.Module):
             n_gaussian=n_gaussian_triple,
             centered=False,
         )
+        # cutoff layer
+        if cutoff_network is not None:
+            self.cutoff_net = cutoff_network(cutoff)
+        else:
+            self.cutoff_net = None
 
         # layer for extracting triple features
         self.triple_distribution = AngularDistribution(n_theta=n_theta, zeta=zeta)
@@ -362,11 +364,16 @@ class SchNetTriple(nn.Module):
         # expand interatomic distances (for example, GaussianFilter)
         f_double = self.radial_filter_double(r_double)
         f_double = f_double * neighbor_mask.unsqueeze(-1)
+        if self.cutoff_net is not None:
+            C_double = self.cutoff_network(r_double)
+            f_double = f_double * C_double.unsqueeze(-1)
         f_ij = self.radial_filter_triple(r_ijk[0])
         f_ik = self.radial_filter_triple(r_ijk[1])
-        # f_jk = self.radial_filter_triple(r_ijk[2])
-        # f_ij = f_ij * triple_mask.unsqueeze(-1)
-        # f_ik = f_ik * triple_mask.unsqueeze(-1)
+        if self.cutoff_net is not None:
+            C_ij = self.cutoff_network(r_ijk[0])
+            C_ik = self.cutoff_network(r_ijk[1])
+            f_ij = f_ij * C_ij.unsqueeze(-1)
+            f_ik = f_ik * C_ik.unsqueeze(-1)
 
         # extract angular features
         triple_ijk = self.triple_distribution(
