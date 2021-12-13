@@ -249,10 +249,6 @@ class Trainer:
                                 after_model,
                                 os.path.join(self.model_path, "after"),
                             )
-                            torch.save(
-                                self.optimizer,
-                                os.path.join(self.model_path, "optim"),
-                            )
                         else:
                             prev_model = copy.deepcopy(self._model)
 
