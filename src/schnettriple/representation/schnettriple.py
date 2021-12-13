@@ -31,10 +31,6 @@ class SchNetInteractionTriple(nn.Module):
         number of angular filter.
     n_filters : int
         number of filters used in continuous-filter convolution.
-    cutoff : float
-        cutoff radius.
-    cutoff_network : nn.Module, default=schnetpack.nn.CosineCutoff
-        cutoff layer.
     normalize_filter : bool, default=False
         if True, divide aggregated filter by number
         of neighbors over which convolution is applied.
@@ -60,8 +56,6 @@ class SchNetInteractionTriple(nn.Module):
             Dense(n_gaussian_triple * n_theta, n_filters, activation=shifted_softplus),
             Dense(n_filters, n_filters, activation=None),
         )
-        ## cutoff layer used in interaction block
-        # self.cutoff_network = cutoff_network(cutoff)
         # interaction block
         self.cfconv = CFConvTriple(
             n_atom_basis,
@@ -104,17 +98,9 @@ class SchNetInteractionTriple(nn.Module):
         x : torch.Tensor
             input representation/embedding of atomic environments with
             (B x At x n_atom_basis) shape.
-        r_double : torch.tensor
-            distances between neighboring atoms with (B x At x Nbr_double) shape.
         f_double : torch.Tensor
             filtered distances of double pairs with
             (B x At x Nbr_double x n_gaussian_double) shape.
-        r_ij : torch.tensor
-            distance between central atom and neighbor j with
-            (B x At x Nbr_triple) shape.
-        r_ik : torch.tensor
-            distance between central atom and neighbor k with
-            (B x At x Nbr_triple) shape.
         triple_ijk : torch.tensor
             combination of filtered distances and angular filters with
             (B x At x Nbr_triple x n_angular) shape.
@@ -139,10 +125,7 @@ class SchNetInteractionTriple(nn.Module):
         # continuous-filter convolution interaction block followed by Dense layer
         v = self.cfconv(
             x,
-            r_double=r_double,
             f_double=f_double,
-            r_ij=r_ij,
-            r_ik=r_ik,
             triple_ijk=triple_ijk,
             neighbors=neighbors,
             neighbor_mask=neighbor_mask,
@@ -388,10 +371,7 @@ class SchNetTriple(nn.Module):
         for interaction in self.interactions:
             x = interaction(
                 x=x,
-                r_double=r_double,
                 f_double=f_double,
-                r_ij=r_ijk[0],
-                r_ik=r_ijk[1],
                 triple_ijk=triple_ijk,
                 neighbors=neighbors,
                 neighbor_mask=neighbor_mask,
