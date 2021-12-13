@@ -74,10 +74,7 @@ class SchNetInteractionTriple(nn.Module):
     def forward(
         self,
         x,
-        r_double,
         f_double,
-        r_ij,
-        r_ik,
         triple_ijk,
         neighbors,
         neighbor_mask,
