@@ -361,13 +361,13 @@ class SchNetTriple(nn.Module):
         f_double = self.radial_filter_double(r_double)
         f_double = f_double * neighbor_mask.unsqueeze(-1)
         if self.cutoff_net is not None:
-            C_double = self.cutoff_network(r_double)
+            C_double = self.cutoff_net(r_double)
             f_double = f_double * C_double.unsqueeze(-1)
         f_ij = self.radial_filter_triple(r_ijk[0])
         f_ik = self.radial_filter_triple(r_ijk[1])
         if self.cutoff_net is not None:
-            C_ij = self.cutoff_network(r_ijk[0])
-            C_ik = self.cutoff_network(r_ijk[1])
+            C_ij = self.cutoff_net(r_ijk[0])
+            C_ik = self.cutoff_net(r_ijk[1])
             f_ij = f_ij * C_ij.unsqueeze(-1)
             f_ik = f_ik * C_ik.unsqueeze(-1)
 
