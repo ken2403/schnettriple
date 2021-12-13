@@ -271,8 +271,6 @@ class SchNetTriple(nn.Module):
                         n_gaussian_triple=n_gaussian_triple,
                         n_theta=n_theta,
                         n_filters=n_filters,
-                        cutoff=cutoff,
-                        cutoff_network=cutoff_network,
                         normalize_filter=normalize_filter,
                     )
                 ]
@@ -288,8 +286,6 @@ class SchNetTriple(nn.Module):
                         n_gaussian_triple=n_gaussian_triple,
                         n_theta=n_theta,
                         n_filters=n_filters,
-                        cutoff=cutoff,
-                        cutoff_network=cutoff_network,
                         normalize_filter=normalize_filter,
                     )
                     for _ in range(n_interactions)
