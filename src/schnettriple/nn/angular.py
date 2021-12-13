@@ -52,25 +52,25 @@ class ThetaDistribution(nn.Module):
         theta_distribution : torch.Tensor
             theta distribution with (B x At x Nbr_triple x n_theta) of shape.
         """
-        # # diff theta
-        # # 0.95 is multiplied to the cos values to prevent acos from returning NaN.
-        # # (https://github.com/ken2403/torchani/blob/master/torchani/aev.py)
-        # diff_theta = (
-        #     torch.arccos(0.95 * cos_theta)[:, :, :, None]
-        #     - self.offset_theta[None, None, None, :]
-        # )
-        # # calculate theta_filters
-        # theta_distribution = 2 ** (1.0 - self.zeta) * torch.pow(
-        #     1.0 + torch.cos(diff_theta), self.zeta
-        # )
-        sin_theta = torch.sqrt(1.0 - cos_theta ** 2 + 1e-9)
-        diff_cos = cos_theta[:, :, :, None] * torch.cos(
-            self.offset_theta[None, None, None, :]
-        ) + sin_theta[:, :, :, None] * torch.sin(self.offset_theta[None, None, None, :])
+        # diff theta
+        # 0.95 is multiplied to the cos values to prevent acos from returning NaN.
+        # (https://github.com/ken2403/torchani/blob/master/torchani/aev.py)
+        diff_theta = (
+            torch.acos(0.95 * cos_theta)[:, :, :, None]
+            - self.offset_theta[None, None, None, :]
+        )
         # calculate theta_filters
         theta_distribution = 2 ** (1.0 - self.zeta) * torch.pow(
-            1.0 + diff_cos, self.zeta
+            1.0 + torch.cos(diff_theta), self.zeta
         )
+        # sin_theta = torch.sqrt(1.0 - cos_theta ** 2 + 1e-9)
+        # diff_cos = cos_theta[:, :, :, None] * torch.cos(
+        #     self.offset_theta[None, None, None, :]
+        # ) + sin_theta[:, :, :, None] * torch.sin(self.offset_theta[None, None, None, :])
+        # # calculate theta_filters
+        # theta_distribution = 2 ** (1.0 - self.zeta) * torch.pow(
+        #     1.0 + diff_cos, self.zeta
+        # )
 
         # # calculate theta_filters
         # theta_pos = [
