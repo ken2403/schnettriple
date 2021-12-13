@@ -230,10 +230,6 @@ class Trainer:
                             # self.optimizer = torch.optim.Adam(trainable_params)
                             # self.optimizer.load_state_dict(prev_optim.state_dict())
                             with open("inputs.pkl", "wb") as tf:
-                                train_batch_ = {
-                                    k: v.to("cpu").detach().numpy()
-                                    for k, v in train_batch.items()
-                                }
                                 pickle.dump(train_batch_, tf)
                             # with open("result.pkl", "wb") as tf:
                             #     result_ = {
@@ -251,6 +247,10 @@ class Trainer:
                             )
                         else:
                             prev_model = copy.deepcopy(self._model)
+                            train_batch_ = {
+                                k: v.to("cpu").clone().detach().numpy()
+                                for k, v in train_batch.items()
+                            }
 
                         # L1 regularization
                         if regularization:
