@@ -31,7 +31,7 @@ class Dense(nn.Linear):
         out_features: int,
         bias: bool = True,
         activation=None,
-        weight_init=nn.init.xavier_uniform,
+        weight_init=nn.init.xavier_uniform_,
         bias_init=nn.init.constant_,
     ) -> None:
         self.activation = activation
