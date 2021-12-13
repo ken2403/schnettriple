@@ -27,12 +27,12 @@ class ThetaDistribution(nn.Module):
 
     def __init__(self, n_theta=10, zeta=8.0):
         super(ThetaDistribution, self).__init__()
-        offset_theta = torch.linspace(0, np.pi, n_theta)
-        self.register_buffer("zeta", torch.FloatTensor([zeta]))
-        self.register_buffer("offset_theta", offset_theta)
+        # offset_theta = torch.linspace(0, np.pi, n_theta)
+        # self.register_buffer("zeta", torch.FloatTensor([zeta]))
+        # self.register_buffer("offset_theta", offset_theta)
 
-        # zeta = torch.tensor(zeta)
-        # self.register_buffer("zetas", zeta)
+        zeta = torch.tensor(zeta)
+        self.register_buffer("zetas", zeta)
 
     def forward(self, cos_theta):
         """
@@ -52,17 +52,17 @@ class ThetaDistribution(nn.Module):
         theta_distribution : torch.Tensor
             theta distribution with (B x At x Nbr_triple x n_theta) of shape.
         """
-        # diff theta
-        # 0.95 is multiplied to the cos values to prevent acos from returning NaN.
-        # (https://github.com/ken2403/torchani/blob/master/torchani/aev.py)
-        diff_theta = (
-            torch.arccos(0.95 * cos_theta)[:, :, :, None]
-            - self.offset_theta[None, None, None, :]
-        )
-        # calculate theta_filters
-        theta_distribution = 2 ** (1.0 - self.zeta) * torch.pow(
-            1.0 + torch.cos(diff_theta), self.zeta
-        )
+        # # diff theta
+        # # 0.95 is multiplied to the cos values to prevent acos from returning NaN.
+        # # (https://github.com/ken2403/torchani/blob/master/torchani/aev.py)
+        # diff_theta = (
+        #     torch.arccos(0.95 * cos_theta)[:, :, :, None]
+        #     - self.offset_theta[None, None, None, :]
+        # )
+        # # calculate theta_filters
+        # theta_distribution = 2 ** (1.0 - self.zeta) * torch.pow(
+        #     1.0 + torch.cos(diff_theta), self.zeta
+        # )
         # sin_theta = torch.sqrt(1.0 - cos_theta ** 2 + 1e-5)
         # sin_theta = sin_theta * (cos_theta != -1)
         # diff_cos = cos_theta[:, :, :, None] * torch.cos(
@@ -73,16 +73,16 @@ class ThetaDistribution(nn.Module):
         #     1.0 + diff_cos, self.zeta
         # )
 
-        ## calculate theta_filters
-        # theta_pos = [
-        #     2 ** (1 - zeta) * ((1.0 - cos_theta) ** zeta).unsqueeze(-1)
-        #     for zeta in self.zetas
-        # ]
-        # theta_neg = [
-        #     2 ** (1 - zeta) * ((1.0 + cos_theta) ** zeta).unsqueeze(-1)
-        #     for zeta in self.zetas
-        # ]
-        # theta_distribution = torch.cat(theta_pos + theta_neg, -1)
+        # calculate theta_filters
+        theta_pos = [
+            2 ** (1 - zeta) * ((1.0 - cos_theta) ** zeta).unsqueeze(-1)
+            for zeta in self.zetas
+        ]
+        theta_neg = [
+            2 ** (1 - zeta) * ((1.0 + cos_theta) ** zeta).unsqueeze(-1)
+            for zeta in self.zetas
+        ]
+        theta_distribution = torch.cat(theta_pos + theta_neg, -1)
 
         return theta_distribution
 
