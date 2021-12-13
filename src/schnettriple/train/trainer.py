@@ -221,22 +221,8 @@ class Trainer:
                         print("before: {}".format(loss))
 
                         if loss.isnan().any():
-                            # self._model = prev_model
-                            # result = self._model(train_batch)
-                            # loss = self.loss_fn(train_batch, result)
-                            # trainable_params = filter(
-                            #     lambda p: p.requires_grad, self._model.parameters()
-                            # )
-                            # self.optimizer = torch.optim.Adam(trainable_params)
-                            # self.optimizer.load_state_dict(prev_optim.state_dict())
                             with open("inputs.pkl", "wb") as tf:
                                 pickle.dump(train_batch_, tf)
-                            # with open("result.pkl", "wb") as tf:
-                            #     result_ = {
-                            #         k: v.to("cpu").detach().numpy()
-                            #         for k, v in result.items()
-                            #     }
-                            #     pickle.dump(result_, tf)
                             torch.save(
                                 prev_model,
                                 os.path.join(self.model_path, "prev"),
