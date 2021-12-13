@@ -218,7 +218,7 @@ class Trainer:
                     with torch.cuda.amp.autocast():
                         result = self._model(train_batch)
                         loss = self.loss_fn(train_batch, result)
-                        print("before: {}".format(loss))
+                        # print("before: {}".format(loss))
 
                         if loss.isnan().any():
                             with open("inputs.pkl", "wb") as tf:
@@ -245,15 +245,11 @@ class Trainer:
                                 if param.requires_grad:
                                     l1_reg = l1_reg + torch.norm(param, 1)
                             loss = loss + l1_lambda * l1_reg
-                            print("after: {}".format(loss))
+                            # print("after: {}".format(loss))
 
                     if device.type == "cuda":
                         # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
-                        # with torch.autograd.detect_anomaly():
                         scaler.scale(loss).backward()
-                        # torch.nn.utils.clip_grad_norm_(
-                        #     self._model.parameters(), max_norm=max_norm
-                        # )
                         # scaler.step() first unscales the gradients of the optimizer's assigned params.
                         scaler.step(self.optimizer)
                         # Updates the scale for next iteration.
