@@ -1,4 +1,4 @@
-__version_info__ = (1, 0, 5)
+__version_info__ = (1, 0, 6)
 __version__ = ".".join(map(str, __version_info__))
 """
 (0.1.5)
@@ -50,4 +50,6 @@ __version__ = ".".join(map(str, __version_info__))
 - multiple with node embedding of neihgbor j and neighbor k.
 (1.0.5)
 - add feture weighting to schnettriple(substute for residual networks)
+(1.0.6)
+- change the location of applying the cutoff function.
 """
