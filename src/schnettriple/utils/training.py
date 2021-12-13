@@ -1,7 +1,9 @@
 import os
 import schnetpack as spk
 import torch
-from torch.optim import Adam
+from torch.optim import SGD
+
+# from torch.optim import Adam
 
 import schnettriple as snt
 
@@ -12,7 +14,7 @@ def get_trainer(args, model, train_loader, val_loader, metrics):
     # setup optimizer
     # filter for trainable parameters (https://github.com/pytorch/pytorch/issues/679)
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    optimizer = Adam(trainable_params, lr=args.lr)
+    optimizer = SGD(trainable_params, lr=args.lr)
 
     # setup hook and logging
     hooks = [spk.train.MaxEpochHook(args.max_epochs)]
