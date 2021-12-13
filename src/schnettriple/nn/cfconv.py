@@ -71,18 +71,9 @@ class CFConvTriple(nn.Module):
         ----------
         x : torch.Tensor
             input representation/embedding of atomic environments with (B x At x n_in) shape.
-        r_double : torch.Tensor
-            distances between neighboring atoms with
-            (B x At x Nbr_double) shape.
         f_double : torch.tensor
             filtered distances of double pairs with
             (B x At x Nbr_double x n_gaussian_double) shape.
-        r_ij : torch.Tensor
-            distance between central atom and neighbor j with
-            (B x At x Nbr_triple) shape.
-        r_ik : torch.Tensor
-            distance between central atom and neighbor k with
-            (B x At x Nbr_triple) shape.
         triple_ijk : torch.tensor
             combination of filtered distances and angular filters with
             (B x At x Nbr_triple x n_angular) shape.
