@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 from schnetpack.nn.base import Aggregate
-from torch._C import double
 
 from schnettriple.nn.base import Dense
 
