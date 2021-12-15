@@ -65,5 +65,5 @@ __version__ = ".".join(map(str, __version_info__))
 - cutoff apply after filter generator
 - add node j and node k in CFconvTriple
 (2.1.1)
-- add residual net in cfconv
+- change angular term to BF descriptor
 """
