@@ -1,4 +1,3 @@
-from numpy.lib.twodim_base import tri
 import torch
 from torch import nn
 from schnetpack import Properties
