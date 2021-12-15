@@ -1,4 +1,4 @@
-__version_info__ = (2, 0, 0)
+__version_info__ = (2, 1, 0)
 __version__ = ".".join(map(str, __version_info__))
 """
 (0.1.5)
@@ -60,4 +60,7 @@ __version__ = ".".join(map(str, __version_info__))
 
 (2.0.0)
 - separate double and triple interaction blocks.
+(2.1.0)
+- cutoff apply after filter generator
+- add node j and node k in CFconvTriple
 """
