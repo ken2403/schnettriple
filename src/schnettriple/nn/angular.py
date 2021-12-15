@@ -63,14 +63,6 @@ class ThetaDistribution(nn.Module):
         # theta_distribution = 2 ** (1.0 - self.zeta) * torch.pow(
         #     1.0 + torch.cos(diff_theta), self.zeta
         # )
-        # sin_theta = torch.sqrt(1.0 - cos_theta ** 2 + 1e-9)
-        # diff_cos = cos_theta[:, :, :, None] * torch.cos(
-        #     self.offset_theta[None, None, None, :]
-        # ) + sin_theta[:, :, :, None] * torch.sin(self.offset_theta[None, None, None, :])
-        # # calculate theta_filters
-        # theta_distribution = 2 ** (1.0 - self.zeta) * torch.pow(
-        #     1.0 + diff_cos, self.zeta
-        # )
 
         # calculate theta_filters
         theta_pos = [
