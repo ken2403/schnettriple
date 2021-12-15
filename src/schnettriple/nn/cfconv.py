@@ -99,8 +99,8 @@ class CFConvDouble(nn.Module):
         # element-wise multiplication, aggregating and Dense layer
         y_double = y_double * W_double
         y_double = self.agg(y_double, neighbor_mask)
-        # residual net
-        y_double = y_double + y
+        # # residual net
+        # y_double = y_double + y
 
         # output embbedings through Dense layer
         y_double = self.f2out(y_double)
@@ -207,8 +207,8 @@ class CFConvTriple(nn.Module):
         # element-wise multiplication, aggregating and Dense layer
         y_triple = y_triple * W_triple
         y_triple = self.agg(y_triple, triple_mask)
-        # residual net
-        y_triple = y_triple + y
+        # # residual net
+        # y_triple = y_triple + y
 
         # output embbedings through Dense layer
         y_triple = self.f2out(y_triple)
