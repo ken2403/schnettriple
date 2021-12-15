@@ -220,23 +220,23 @@ class Trainer:
                         loss = self.loss_fn(train_batch, result)
                         # print("before: {}".format(loss))
 
-                        if loss.isnan().any():
-                            with open("inputs.pkl", "wb") as tf:
-                                pickle.dump(train_batch_, tf)
-                            torch.save(
-                                prev_model,
-                                os.path.join(self.model_path, "prev"),
-                            )
-                            torch.save(
-                                after_model,
-                                os.path.join(self.model_path, "after"),
-                            )
-                        else:
-                            prev_model = copy.deepcopy(self._model)
-                            train_batch_ = {
-                                k: v.to("cpu").clone().detach().numpy()
-                                for k, v in train_batch.items()
-                            }
+                        # if loss.isnan().any():
+                        #     with open("inputs.pkl", "wb") as tf:
+                        #         pickle.dump(train_batch_, tf)
+                        #     torch.save(
+                        #         prev_model,
+                        #         os.path.join(self.model_path, "prev"),
+                        #     )
+                        #     torch.save(
+                        #         after_model,
+                        #         os.path.join(self.model_path, "after"),
+                        #     )
+                        # else:
+                        #     prev_model = copy.deepcopy(self._model)
+                        #     train_batch_ = {
+                        #         k: v.to("cpu").clone().detach().numpy()
+                        #         for k, v in train_batch.items()
+                        #     }
 
                         # L1 regularization
                         if regularization:
@@ -254,7 +254,7 @@ class Trainer:
                         scaler.step(self.optimizer)
                         # Updates the scale for next iteration.
                         scaler.update()
-                        after_model = copy.deepcopy(self._model)
+                        # after_model = copy.deepcopy(self._model)
                     else:
                         loss.backward()
                         self.optimizer.step()
