@@ -197,10 +197,6 @@ class Trainer:
                     self.epoch -= 1
                     break
 
-                # perform training epoch
-                #                if progress:
-                #                    train_iter = tqdm(self.train_loader)
-                #                else:
                 train_iter = self.train_loader
 
                 self._model.train()
@@ -217,34 +213,14 @@ class Trainer:
                     with torch.cuda.amp.autocast():
                         result = self._model(train_batch)
                         loss = self.loss_fn(train_batch, result)
-                        # print("before: {}".format(loss))
 
-                        # if loss.isnan().any():
-                        #     with open("inputs.pkl", "wb") as tf:
-                        #         pickle.dump(train_batch_, tf)
-                        #     torch.save(
-                        #         prev_model,
-                        #         os.path.join(self.model_path, "prev"),
-                        #     )
-                        #     torch.save(
-                        #         after_model,
-                        #         os.path.join(self.model_path, "after"),
-                        #     )
-                        # else:
-                        #     prev_model = copy.deepcopy(self._model)
-                        #     train_batch_ = {
-                        #         k: v.to("cpu").clone().detach().numpy()
-                        #         for k, v in train_batch.items()
-                        #     }
-
-                        # L1 regularization
-                        if regularization:
-                            l1_reg = torch.tensor(0.0, requires_grad=True)
-                            for param in self._model.parameters():
-                                if param.requires_grad:
-                                    l1_reg = l1_reg + torch.norm(param, 1)
-                            loss = loss + l1_lambda * l1_reg
-                            # print("after: {}".format(loss))
+                    # L1 regularization
+                    if regularization:
+                        l1_reg = torch.tensor(0.0, requires_grad=True)
+                        for param in self._model.parameters():
+                            if param.requires_grad:
+                                l1_reg = l1_reg + torch.norm(param, 1)
+                        loss = loss + l1_lambda * l1_reg
 
                     if device.type == "cuda":
                         # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
