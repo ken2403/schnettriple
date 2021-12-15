@@ -1,4 +1,4 @@
-__version_info__ = (2, 1, 0)
+__version_info__ = (2, 1, 1)
 __version__ = ".".join(map(str, __version_info__))
 """
 (0.1.5)
@@ -36,6 +36,7 @@ __version__ = ".".join(map(str, __version_info__))
 - neighborのindexが-1とならないようにloaderを修正
 (0.4.5)
 - gussian expand した距離の値にneighbor maskを適用する
+
 (1.0.0)
 - change the use of triple featrues.
 - add polynomial cutoff layer
@@ -63,4 +64,6 @@ __version__ = ".".join(map(str, __version_info__))
 (2.1.0)
 - cutoff apply after filter generator
 - add node j and node k in CFconvTriple
+(2.1.1)
+- add residual net in cfconv
 """
