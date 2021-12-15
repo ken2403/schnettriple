@@ -69,7 +69,7 @@ class SchNetInteractionTriple(nn.Module):
         # dense layer
         self.dense = Dense(n_atom_basis, n_atom_basis, bias=True, activation=None)
         # wighting layer
-        self.feature_wighting = FeatureWeighting(n_atom_basis)
+        # self.feature_wighting = FeatureWeighting(n_atom_basis)
 
     def forward(
         self,
@@ -131,7 +131,7 @@ class SchNetInteractionTriple(nn.Module):
             triple_mask=triple_mask,
         )
         v = self.dense(v)
-        x = self.feature_wighting(x)
+        # x = self.feature_wighting(x)
         x = x + v
 
         return x
