@@ -138,18 +138,33 @@ def get_output_module(args, representation, mean, stddev, atomref):
             contributions=contributions,
         )
     elif output_module_str == "atomwise":
-        return spk.atomistic.output_modules.Atomwise(
-            args.features,
-            aggregation_mode=spk.utils.get_pooling_mode(args),
-            mean=mean[args.property],
-            stddev=stddev[args.property],
-            atomref=atomref[args.property],
-            property=args.property,
-            derivative=derivative,
-            negative_dr=negative_dr,
-            contributions=contributions,
-            stress=stress,
-        )
+        if args.model == "schnettriple":
+            return spk.atomistic.output_modules.Atomwise(
+                args.features * 2,
+                aggregation_mode=spk.utils.get_pooling_mode(args),
+                mean=mean[args.property],
+                stddev=stddev[args.property],
+                atomref=atomref[args.property],
+                property=args.property,
+                derivative=derivative,
+                negative_dr=negative_dr,
+                contributions=contributions,
+                stress=stress,
+            )
+        else:
+            return spk.atomistic.output_modules.Atomwise(
+                args.features,
+                aggregation_mode=spk.utils.get_pooling_mode(args),
+                mean=mean[args.property],
+                stddev=stddev[args.property],
+                atomref=atomref[args.property],
+                property=args.property,
+                derivative=derivative,
+                negative_dr=negative_dr,
+                contributions=contributions,
+                stress=stress,
+            )
+
     elif output_module_str == "polarizability":
         return spk.atomistic.output_modules.Polarizability(
             args.features,
