@@ -158,7 +158,6 @@ class Trainer:
         n_epochs=sys.maxsize,
         regularization=False,
         l1_lambda=0.01,
-        max_norm=0.25,
     ):
         """
         Train the model for the given number of epochs on a specified device.
