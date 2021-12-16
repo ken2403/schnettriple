@@ -36,7 +36,6 @@ class SchNetInteractionDouble(nn.Module):
         n_atom_basis,
         n_gaussian_double,
         n_filters,
-        cutoffnet=None,
         normalize_filter=False,
     ):
         super(SchNetInteractionDouble, self).__init__()
@@ -52,7 +51,6 @@ class SchNetInteractionDouble(nn.Module):
             n_atom_basis,
             self.filternet_double,
             activation=shifted_softplus,
-            cutoffnet=cutoffnet,
             normalize_filter=normalize_filter,
         )
         # dense layer
@@ -130,7 +128,6 @@ class SchNetInteractionTriple(nn.Module):
         n_gaussian_triple,
         n_theta,
         n_filters,
-        cutoffnet=None,
         normalize_filter=False,
     ):
         super(SchNetInteractionTriple, self).__init__()
@@ -147,7 +144,6 @@ class SchNetInteractionTriple(nn.Module):
             n_atom_basis,
             self.filternet_triple,
             activation=shifted_softplus,
-            cutoffnet=cutoffnet,
             normalize_filter=normalize_filter,
         )
         # dense layer
@@ -304,9 +300,9 @@ class SchNetTriple(nn.Module):
         )
         # cutoff layer
         if cutoff_network is not None:
-            cutoffnet = cutoff_network(cutoff)
+            self.cutoffnet = cutoff_network(cutoff)
         else:
-            cutoffnet = None
+            self.cutoffnet = None
 
         # layer for extracting triple features
         self.triple_distribution = AngularDistribution(n_theta=n_theta, zeta=zeta)
@@ -319,7 +315,6 @@ class SchNetTriple(nn.Module):
                         n_atom_basis=n_atom_basis,
                         n_gaussian_double=n_gaussian_double,
                         n_filters=n_filters,
-                        cutoffnet=cutoffnet,
                         normalize_filter=normalize_filter,
                     )
                 ]
@@ -332,7 +327,6 @@ class SchNetTriple(nn.Module):
                         n_gaussian_triple=n_gaussian_triple,
                         n_theta=n_theta,
                         n_filters=n_filters,
-                        cutoffnet=cutoffnet,
                         normalize_filter=normalize_filter,
                     )
                 ]
@@ -346,7 +340,6 @@ class SchNetTriple(nn.Module):
                         n_atom_basis=n_atom_basis,
                         n_gaussian_double=n_gaussian_double,
                         n_filters=n_filters,
-                        cutoffnet=cutoffnet,
                         normalize_filter=normalize_filter,
                     )
                     for _ in range(n_interactions)
@@ -360,7 +353,6 @@ class SchNetTriple(nn.Module):
                         n_gaussian_triple=n_gaussian_triple,
                         n_theta=n_theta,
                         n_filters=n_filters,
-                        cutoffnet=cutoffnet,
                         normalize_filter=normalize_filter,
                     )
                     for _ in range(n_interactions)
@@ -435,9 +427,15 @@ class SchNetTriple(nn.Module):
         # expand interatomic distances (for example, GaussianFilter)
         f_double = self.radial_double(r_double)
         f_double = f_double * neighbor_mask.unsqueeze(-1)
-
         f_ij = self.radial_triple(r_ijk[0])
         f_ik = self.radial_triple(r_ijk[1])
+        if self.cutoffnet is not None:
+            C_double = self.cutoffnet(r_double).unsqueeze(-1)
+            f_double = f_double * C_double
+            C_ij = self.cutoffnet(r_ijk[0]).unsqueeze(-1)
+            C_ik = self.cutoffnet(r_ijk[1]).unsqueeze(-1)
+            f_ij = f_ij * C_ij
+            f_ik = f_ik * C_ik
 
         # extract angular features
         triple_ijk = self.triple_distribution(

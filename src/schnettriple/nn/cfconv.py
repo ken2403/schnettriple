@@ -36,14 +36,12 @@ class CFConvDouble(nn.Module):
         n_out,
         filternet_double,
         activation=None,
-        cutoffnet=None,
         normalize_filter=False,
     ):
         super(CFConvDouble, self).__init__()
         self.in2f = Dense(n_in, n_filters, bias=False, activation=None)
         self.f2out = Dense(n_filters, n_out, bias=True, activation=activation)
         self.filternet_double = filternet_double
-        self.cutoffnet_double = cutoffnet
         self.agg = Aggregate(axis=2, mean=normalize_filter)
 
     def forward(
@@ -81,9 +79,6 @@ class CFConvDouble(nn.Module):
         """
         # pass triple distribution through filter block (triple)
         W_double = self.filternet_double(f_double)
-        if self.cutoffnet_double is not None:
-            C_double = self.cutoffnet_double(r_double)
-            W_double = W_double * C_double.unsqueeze(-1)
 
         # pass initial embeddings through Dense layer
         y = self.in2f(x)
@@ -136,14 +131,12 @@ class CFConvTriple(nn.Module):
         n_out,
         filternet_triple,
         activation=None,
-        cutoffnet=None,
         normalize_filter=False,
     ):
         super(CFConvTriple, self).__init__()
         self.in2f = Dense(n_in, n_filters, bias=False, activation=None)
         self.f2out = Dense(n_filters, n_out, bias=True, activation=activation)
         self.filternet_triple = filternet_triple
-        self.cutoffnet_triple = cutoffnet
         self.agg = Aggregate(axis=2, mean=normalize_filter)
 
     def forward(
@@ -185,10 +178,6 @@ class CFConvTriple(nn.Module):
         """
         # pass triple distribution through filter block (triple)
         W_triple = self.filternet_triple(triple_ijk)
-        if self.cutoffnet_triple is not None:
-            C_ij = self.cutoffnet_triple(r_ij)
-            C_ik = self.cutoffnet_triple(r_ik)
-            W_triple = W_triple * C_ij.unsqueeze(-1) * C_ik.unsqueeze(-1)
 
         # pass initial embeddings through Dense layer
         y = self.in2f(x)
