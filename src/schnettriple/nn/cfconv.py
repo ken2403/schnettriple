@@ -47,7 +47,6 @@ class CFConvDouble(nn.Module):
     def forward(
         self,
         x,
-        r_double,
         f_double,
         neighbors,
         neighbor_mask,
@@ -142,8 +141,6 @@ class CFConvTriple(nn.Module):
     def forward(
         self,
         x,
-        r_ij,
-        r_ik,
         triple_ijk,
         neighbors_j,
         neighbors_k,

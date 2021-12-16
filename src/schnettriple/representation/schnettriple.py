@@ -59,7 +59,6 @@ class SchNetInteractionDouble(nn.Module):
     def forward(
         self,
         x,
-        r_double,
         f_double,
         neighbors,
         neighbor_mask,
@@ -92,7 +91,6 @@ class SchNetInteractionDouble(nn.Module):
         """
         v = self.cfconv_double(
             x,
-            r_double=r_double,
             f_double=f_double,
             neighbors=neighbors,
             neighbor_mask=neighbor_mask,
@@ -152,8 +150,6 @@ class SchNetInteractionTriple(nn.Module):
     def forward(
         self,
         x,
-        r_ij,
-        r_ik,
         triple_ijk,
         neighbors_j,
         neighbors_k,
@@ -190,8 +186,6 @@ class SchNetInteractionTriple(nn.Module):
         # continuous-filter convolution interaction block followed by Dense layer
         v = self.cfconv_triple(
             x,
-            r_ij=r_ij,
-            r_ik=r_ik,
             triple_ijk=triple_ijk,
             neighbors_j=neighbors_j,
             neighbors_k=neighbors_k,
@@ -458,15 +452,12 @@ class SchNetTriple(nn.Module):
         ):
             x_double = interaction_double(
                 x=x_double,
-                r_double=r_double,
                 f_double=f_double,
                 neighbors=neighbors,
                 neighbor_mask=neighbor_mask,
             )
             x_triple = interaction_triple(
                 x=x_triple,
-                r_ij=r_ijk[0],
-                r_ik=r_ijk[1],
                 triple_ijk=triple_ijk,
                 neighbors_j=neighbors_j,
                 neighbors_k=neighbors_k,
