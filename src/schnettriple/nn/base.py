@@ -1,9 +1,27 @@
+import math
 from torch import Tensor
 import torch
 import torch.nn as nn
+from torch.nn import init
 
 
-__all__ = ["Dense", "FeatureWeighting"]
+__all__ = ["triple_uniform_", "Dense", "FeatureWeighting"]
+
+
+def triple_uniform_(n_triple: int = 40):
+    def init_func_(
+        tensor: Tensor,
+        gain: float = 1.0,
+    ):
+        fan_in, fan_out = nn.init._calculate_fan_in_and_fan_out(tensor)
+        std = gain * math.sqrt(2.0 / float(fan_in + fan_out))
+        a = math.sqrt(3.0) * std  # Calculate uniform bounds from standard deviation
+        t = torch.nn.init._no_grad_uniform_(tensor, -a, a)
+        t[:, -n_triple:] = 1.0e-6
+
+        return t
+
+    return init_func_
 
 
 class Dense(nn.Linear):
@@ -43,7 +61,7 @@ class Dense(nn.Linear):
         """
         Reinitialize model weight and bias values.
         """
-        self.weight_init(self.weight, gain=nn.init.calculate_gain("linear"))
+        self.weight_init(self.weight)
         if self.bias is not None:
             self.bias_init(self.bias, val=0.0)
 
