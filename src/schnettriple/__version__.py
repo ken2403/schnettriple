@@ -71,4 +71,6 @@ __version__ = ".".join(map(str, __version_info__))
 - change angular term to ANI-1
 (2.1.3)
 - add trainble_gaussian parameter
+(3.1.0)
+- change outputmodule; weight value for triple is 1.0e-5.
 """
