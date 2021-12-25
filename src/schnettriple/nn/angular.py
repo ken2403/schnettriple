@@ -85,7 +85,7 @@ class AngularDistribution(nn.Module):
     Attributes
     ----------
     n_theta : int, default=10
-        number of angular filter
+        number of angular filter.
     zeta : float, default=8.0
         zeta value of angular filter.
 

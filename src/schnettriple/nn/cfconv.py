@@ -86,7 +86,7 @@ class CFConvDouble(nn.Module):
         B, At, Nbr_double = neighbors.size()
         nbh = neighbors.reshape(-1, At * Nbr_double, 1)
         nbh = nbh.expand(-1, -1, y.size(2))
-        # get j neighbors of centered atom i.
+        # get j neighbors' embedding of centered atom i.
         y_double = torch.gather(y, 1, nbh)
         y_double = y_double.view(B, At, Nbr_double, -1)
 
