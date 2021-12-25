@@ -40,7 +40,7 @@ class SchNetInteractionDouble(nn.Module):
     ):
         super(SchNetInteractionDouble, self).__init__()
         # filter block used in interaction block
-        self.filternet_double = nn.Sequential(
+        filternet_double = nn.Sequential(
             Dense(n_gaussian_double, n_filters, activation=shifted_softplus),
             Dense(n_filters, n_filters, activation=None),
         )
@@ -49,7 +49,7 @@ class SchNetInteractionDouble(nn.Module):
             n_atom_basis,
             n_filters,
             n_atom_basis,
-            self.filternet_double,
+            filternet_double,
             activation=shifted_softplus,
             normalize_filter=normalize_filter,
         )
@@ -130,7 +130,7 @@ class SchNetInteractionTriple(nn.Module):
     ):
         super(SchNetInteractionTriple, self).__init__()
         # fiter block for triple
-        self.filternet_triple = nn.Sequential(
+        filternet_triple = nn.Sequential(
             Dense(n_gaussian_triple * n_theta, n_filters, activation=shifted_softplus),
             Dense(n_filters, n_filters, activation=None),
         )
@@ -140,7 +140,7 @@ class SchNetInteractionTriple(nn.Module):
             n_atom_basis,
             n_filters,
             n_atom_basis,
-            self.filternet_triple,
+            filternet_triple,
             activation=shifted_softplus,
             normalize_filter=normalize_filter,
         )
@@ -260,6 +260,7 @@ class SchNetTriple(nn.Module):
         cutoff=6.0,
         n_gaussian_double=25,
         n_gaussian_triple=25,
+        trainable_gaussian=False,
         n_theta=10,
         zeta=8.0,
         normalize_filter=False,
@@ -285,12 +286,14 @@ class SchNetTriple(nn.Module):
             stop=cutoff - 0.5,
             n_gaussian=n_gaussian_double,
             centered=False,
+            trainable=trainable_gaussian,
         )
         self.radial_triple = GaussianFilter(
             start=0.0,
             stop=cutoff - 0.5,
             n_gaussian=n_gaussian_triple,
             centered=False,
+            trainbale=trainable_gaussian,
         )
         # cutoff layer
         if cutoff_network is not None:
