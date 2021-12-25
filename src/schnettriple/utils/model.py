@@ -1,10 +1,10 @@
-import logging
 import numpy as np
 import schnetpack as spk
 from ase.data import atomic_numbers
 import torch.nn as nn
 
-from schnettriple.representation import schnettriple
+import schnettriple as snt
+from schnettriple.representation.schnettriple import SchNetTriple
 from schnettriple.nn.cutoff import CosineCutoff, PolyCutoff
 from schnettriple.utils.script_utils import ScriptError
 
@@ -26,58 +26,10 @@ def _get_cutoff_by_string(string_cutoff_function):
 
 def get_representation(args, train_loader=None):
     # build representation
-    if args.model == "schnet":
-
+    if args.model == "schnettriple":
         cutoff_network = _get_cutoff_by_string(args.cutoff_function)
 
-        return spk.representation.SchNet(
-            n_atom_basis=args.features,
-            n_filters=args.features,
-            n_interactions=args.interactions,
-            cutoff=args.cutoff,
-            n_gaussians=args.num_gaussian_double,
-            cutoff_network=cutoff_network,
-            normalize_filter=args.normalize_filter,
-            coupled_interactions=args.share_weights,
-        )
-
-    elif args.model == "wacsf":
-        sfmode = ("weighted", "Behler")[args.behler]
-        # Convert element strings to atomic charges
-        elements = frozenset((atomic_numbers[i] for i in sorted(args.elements)))
-        representation = spk.representation.BehlerSFBlock(
-            args.radial,
-            args.angular,
-            zetas=set(args.zetas),
-            cutoff_radius=args.cutoff,
-            centered=args.centered,
-            crossterms=args.crossterms,
-            elements=elements,
-            mode=sfmode,
-        )
-        logging.info(
-            "Using {:d} {:s}-type SF".format(representation.n_symfuncs, sfmode)
-        )
-        # Standardize representation if requested
-        if args.standardize:
-            if train_loader is None:
-                raise ValueError(
-                    "Specification of a training_loader is required to standardize "
-                    "wACSF"
-                )
-            else:
-                logging.info("Computing and standardizing symmetry function statistics")
-                return spk.representation.StandardizeSF(
-                    representation, train_loader, cuda=args.cuda
-                )
-
-        else:
-            return representation
-
-    elif args.model == "schnettriple":
-        cutoff_network = _get_cutoff_by_string(args.cutoff_function)
-
-        return schnettriple.SchNetTriple(
+        return SchNetTriple(
             n_atom_basis=args.features,
             n_filters=args.features,
             n_interactions=args.interactions,
@@ -91,14 +43,17 @@ def get_representation(args, train_loader=None):
             normalize_filter=args.normalize_filter,
             coupled_interactions=args.share_weights,
         )
-
     else:
-        raise NotImplementedError("Unknown model class:", args.model)
+        raise ValueError(
+            "{} is not implemented! Please set model as 'schnetriple'!".format(
+                args.model
+            )
+        )
 
 
 def get_output_module_by_str(module_str):
     if module_str == "atomwise":
-        return spk.atomistic.Atomwise
+        return snt.nn.output.Atomwise
     elif module_str == "elemental_atomwise":
         return spk.atomistic.ElementalAtomwise
     elif module_str == "dipole_moment":
@@ -140,7 +95,7 @@ def get_output_module(args, representation, mean, stddev, atomref):
         )
     elif output_module_str == "atomwise":
         if args.model == "schnettriple":
-            return spk.atomistic.output_modules.Atomwise(
+            return snt.nn.output.Atomwise(
                 args.features * 2,
                 aggregation_mode=spk.utils.get_pooling_mode(args),
                 mean=mean[args.property],
