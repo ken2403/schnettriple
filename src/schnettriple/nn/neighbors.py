@@ -227,6 +227,8 @@ class GaussianFilter(nn.Module):
         total number of Gaussian functions, :math:`N_g`.
     centered : bool, default=False
         If False, Gaussian's centered values are varied at the offset values and the width value is constant.
+    trainable : bool, default=False
+
     """
 
     def __init__(
@@ -235,13 +237,18 @@ class GaussianFilter(nn.Module):
         stop: float = 6.0,
         n_gaussian: int = 100,
         centered: bool = False,
+        trainable: bool = False,
     ) -> None:
         super().__init__()
         offsets = torch.linspace(start=start, end=stop, steps=n_gaussian)
         widths = torch.FloatTensor((offsets[1] - offsets[0]) * torch.ones_like(offsets))
-        self.register_buffer("offset", offsets, persistent=True)
-        self.register_buffer("width", widths, persistent=True)
         self.centered = centered
+        if trainable:
+            self.width = nn.Parameter(widths)
+            self.offset = nn.Parameter(offsets)
+        else:
+            self.register_buffer("width", widths)
+            self.register_buffer("offset", offsets)
 
     def forward(self, distances: Tensor) -> Tensor:
         """
