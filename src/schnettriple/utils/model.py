@@ -84,6 +84,7 @@ def get_representation(args, train_loader=None):
             cutoff=args.cutoff,
             n_gaussian_double=args.num_gaussian_double,
             n_gaussian_triple=args.num_gaussian_triple,
+            trainable_gaussian=args.trainable_gaussian,
             n_theta=args.num_theta,
             zeta=args.zeta,
             cutoff_network=cutoff_network,
