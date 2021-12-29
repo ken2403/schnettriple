@@ -486,7 +486,7 @@ class SchNetTriple(nn.Module):
             )
             if self.return_intermid:
                 xs.append(x)
-        x = torch.cat((x, triple_ijk), dim=-1)
+        # x = torch.cat((x, triple_ijk), dim=-1)
         if self.return_intermid:
             return x, xs
         return x
