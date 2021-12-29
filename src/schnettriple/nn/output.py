@@ -63,7 +63,7 @@ class MLP(nn.Module):
                     self.n_neurons[0],
                     self.n_neurons[1],
                     activation=activation,
-                    weight_init=schnettriple.nn.base.triple_uniform_(n_in / 2),
+                    weight_init=schnettriple.nn.base.triple_uniform_(n_in // 2),
                 )
             ]
             layers = [
