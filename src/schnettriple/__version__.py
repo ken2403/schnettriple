@@ -1,4 +1,4 @@
-__version_info__ = (2, 1, 3)
+__version_info__ = (3, 1, 1)
 __version__ = ".".join(map(str, __version_info__))
 """
 (0.1.5)
@@ -73,4 +73,9 @@ __version__ = ".".join(map(str, __version_info__))
 - add trainble_gaussian parameter
 (3.1.0)
 - change outputmodule; weight value for triple is 1.0e-5.
+(3.1.1)
+- remove weight init for triple (it's not meaningful)
+- add triple_ijk before concatinate with atom embeddings
+- simply concatinate angular featrues to atom embeddings
+- add trainable_theta parameter.
 """
