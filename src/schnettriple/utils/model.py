@@ -38,6 +38,7 @@ def get_representation(args, train_loader=None):
             n_gaussian_triple=args.num_gaussian_triple,
             trainable_gaussian=args.trainable_gaussian,
             n_theta=args.num_theta,
+            trainable_theta=args.trainable_theta,
             zeta=args.zeta,
             cutoff_network=cutoff_network,
             normalize_filter=args.normalize_filter,
@@ -96,7 +97,7 @@ def get_output_module(args, representation, mean, stddev, atomref):
     elif output_module_str == "atomwise":
         if args.model == "schnettriple":
             return snt.nn.output.Atomwise(
-                args.features * 2,
+                n_in=args.features + (args.num_theta * args.num_gaussian_triple),
                 aggregation_mode=spk.utils.get_pooling_mode(args),
                 mean=mean[args.property],
                 stddev=stddev[args.property],
