@@ -3,6 +3,7 @@ from torch import nn
 from schnetpack.nn.base import Aggregate
 
 from schnettriple.nn.base import Dense
+from schnettriple.nn.cutoff import CosineCutoff
 
 
 __all__ = ["CFConvDouble", "CFConvTriple"]
@@ -37,16 +38,20 @@ class CFConvDouble(nn.Module):
         filternet_double,
         activation=None,
         normalize_filter=False,
+        cutoff=6.0,
+        cutoff_net=CosineCutoff,
     ):
         super(CFConvDouble, self).__init__()
         self.in2f = Dense(n_in, n_filters, bias=False, activation=None)
         self.f2out = Dense(n_filters, n_out, bias=True, activation=activation)
         self.filternet_double = filternet_double
+        self.cutoff_net = cutoff_net(cutoff)
         self.agg = Aggregate(axis=2, mean=normalize_filter)
 
     def forward(
         self,
         x,
+        r_double,
         f_double,
         neighbors,
         neighbor_mask,
@@ -78,6 +83,9 @@ class CFConvDouble(nn.Module):
         """
         # pass gaussian filter value to filter generate network
         W_double = self.filternet_double(f_double)
+        # apply cutoff net
+        C_double = self.cutoff_net(r_double)
+        W_double = W_double * C_double.unsqueeze(-1)
 
         # pass initial embeddings through Dense layer
         y_double = self.in2f(x)

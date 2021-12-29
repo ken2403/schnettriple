@@ -37,6 +37,8 @@ class SchNetInteractionDouble(nn.Module):
         n_gaussian_double,
         n_filters,
         normalize_filter=False,
+        cutoff=6.0,
+        cutoff_net=CosineCutoff,
     ):
         super(SchNetInteractionDouble, self).__init__()
         # filter block used in interaction block
@@ -52,6 +54,8 @@ class SchNetInteractionDouble(nn.Module):
             filternet_double,
             activation=shifted_softplus,
             normalize_filter=normalize_filter,
+            cutoff=cutoff,
+            cutoff_net=cutoff_net,
         )
         # dense layer
         self.dense = Dense(n_atom_basis, n_atom_basis, bias=True, activation=None)
@@ -59,6 +63,7 @@ class SchNetInteractionDouble(nn.Module):
     def forward(
         self,
         x,
+        r_double,
         f_double,
         neighbors,
         neighbor_mask,
@@ -91,6 +96,7 @@ class SchNetInteractionDouble(nn.Module):
         """
         v = self.cfconv_double(
             x,
+            r_double=r_double,
             f_double=f_double,
             neighbors=neighbors,
             neighbor_mask=neighbor_mask,
@@ -300,11 +306,11 @@ class SchNetTriple(nn.Module):
             centered=False,
             trainable=trainable_gaussian,
         )
-        # cutoff layer
-        if cutoff_network is not None:
-            self.cutoffnet = cutoff_network(cutoff)
-        else:
-            self.cutoffnet = None
+        # # cutoff layer
+        # if cutoff_network is not None:
+        #     self.cutoffnet = cutoff_network(cutoff)
+        # else:
+        #     self.cutoffnet = None
 
         # layer for extracting triple features
         self.triple_distribution = AngularDistribution(
@@ -320,6 +326,8 @@ class SchNetTriple(nn.Module):
                         n_gaussian_double=n_gaussian_double,
                         n_filters=n_filters,
                         normalize_filter=normalize_filter,
+                        cutoff=cutoff,
+                        cutoff_network=cutoff_network,
                     )
                 ]
                 * n_interactions
@@ -345,6 +353,8 @@ class SchNetTriple(nn.Module):
                         n_gaussian_double=n_gaussian_double,
                         n_filters=n_filters,
                         normalize_filter=normalize_filter,
+                        cutoff=cutoff,
+                        cutoff_net=cutoff_network,
                     )
                     for _ in range(n_interactions)
                 ]
@@ -433,13 +443,13 @@ class SchNetTriple(nn.Module):
         f_double = f_double * neighbor_mask.unsqueeze(-1)
         f_ij = self.radial_triple(r_ijk[0])
         f_ik = self.radial_triple(r_ijk[1])
-        if self.cutoffnet is not None:
-            C_double = self.cutoffnet(r_double).unsqueeze(-1)
-            f_double = f_double * C_double
-            C_ij = self.cutoffnet(r_ijk[0]).unsqueeze(-1)
-            C_ik = self.cutoffnet(r_ijk[1]).unsqueeze(-1)
-            f_ij = f_ij * C_ij
-            f_ik = f_ik * C_ik
+        # if self.cutoffnet is not None:
+        #     C_double = self.cutoffnet(r_double).unsqueeze(-1)
+        #     f_double = f_double * C_double
+        #     C_ij = self.cutoffnet(r_ijk[0]).unsqueeze(-1)
+        #     C_ik = self.cutoffnet(r_ijk[1]).unsqueeze(-1)
+        #     f_ij = f_ij * C_ij
+        #     f_ik = f_ik * C_ik
 
         # extract angular features
         triple_ijk = self.triple_distribution(
@@ -480,6 +490,7 @@ class SchNetTriple(nn.Module):
         for interaction_double in self.interactions_double:
             x = interaction_double(
                 x=x,
+                r_double=r_double,
                 f_double=f_double,
                 neighbors=neighbors,
                 neighbor_mask=neighbor_mask,
