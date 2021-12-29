@@ -132,7 +132,6 @@ class Atomwise(nn.Module):
         stddev=None,
         atomref=None,
         outnet=None,
-        triple=True,
     ):
         super(Atomwise, self).__init__()
 
@@ -159,7 +158,7 @@ class Atomwise(nn.Module):
         if outnet is None:
             self.out_net = nn.Sequential(
                 schnetpack.nn.base.GetItem("representation"),
-                MLP(n_in, n_out, n_neurons, n_layers, activation, triple),
+                MLP(n_in, n_out, n_neurons, n_layers, activation),
             )
         else:
             self.out_net = outnet
