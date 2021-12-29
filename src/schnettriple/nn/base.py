@@ -2,28 +2,9 @@ import math
 from torch import Tensor
 import torch
 import torch.nn as nn
-from torch.nn import init
 
 
-__all__ = ["triple_uniform_", "Dense", "FeatureWeighting"]
-
-
-def triple_uniform_(n_triple: int = 40):
-    def init_func_(
-        tensor: Tensor,
-        gain: float = 1.0,
-    ):
-        fan_in, fan_out = nn.init._calculate_fan_in_and_fan_out(tensor)
-        std = gain * math.sqrt(2.0 / float(fan_in + fan_out))
-        a = math.sqrt(3.0) * std  # Calculate uniform bounds from standard deviation
-        t = torch.nn.init._no_grad_uniform_(tensor, -a, a)
-        zero = torch.ones_like(t)
-        zero[:, -n_triple:] = 0.0
-        t = t * zero
-
-        return t
-
-    return init_func_
+__all__ = ["Dense", "FeatureWeighting"]
 
 
 class Dense(nn.Linear):
