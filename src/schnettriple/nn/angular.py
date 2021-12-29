@@ -16,6 +16,8 @@ class ThetaDistribution(nn.Module):
         number of theta_s filter.
     zeta : float, default=8.0
         zeta value of angular filter.
+    trainable : bool, default=True
+
 
     References
     ----------
@@ -25,11 +27,19 @@ class ThetaDistribution(nn.Module):
         Chemical Science, 3192-3203. 2017.
     """
 
-    def __init__(self, n_theta=10, zeta=8.0):
+    def __init__(
+        self,
+        n_theta=10,
+        zeta=8.0,
+        trainable=True,
+    ):
         super(ThetaDistribution, self).__init__()
         offset_theta = torch.linspace(0, np.pi, n_theta)
         self.register_buffer("zeta", torch.FloatTensor([zeta]))
-        self.register_buffer("offset_theta", offset_theta)
+        if trainable:
+            self.offset_theta = nn.Parameter(offset_theta)
+        else:
+            self.register_buffer("offset_theta", offset_theta)
 
         # zeta = torch.tensor(zeta)
         # self.register_buffer("zetas", zeta)
@@ -97,9 +107,16 @@ class AngularDistribution(nn.Module):
         Chemical Science, 3192-3203. 2017.
     """
 
-    def __init__(self, n_theta=10, zeta=8.0):
+    def __init__(
+        self,
+        n_theta=10,
+        zeta=8.0,
+        trainable_theta=True,
+    ):
         super(AngularDistribution, self).__init__()
-        self.theta_filter = ThetaDistribution(n_theta=n_theta, zeta=zeta)
+        self.theta_filter = ThetaDistribution(
+            n_theta=n_theta, zeta=zeta, trainable=trainable_theta
+        )
 
     def forward(
         self,
