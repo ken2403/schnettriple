@@ -39,6 +39,7 @@
     "normalize_filter": false,
     "num_gaussian_double": 40,
     "num_gaussian_triple": 20,
+    "num_output_layer": 2,
     "num_theta": 10,
     "regularization":true,
     "rho": 0.01,

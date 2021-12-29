@@ -99,6 +99,7 @@ def get_output_module(args, representation, mean, stddev, atomref):
             return snt.nn.output.Atomwise(
                 n_in=args.features + (args.num_theta * args.num_gaussian_triple),
                 aggregation_mode=spk.utils.get_pooling_mode(args),
+                n_layers=args.num_output_layer,
                 mean=mean[args.property],
                 stddev=stddev[args.property],
                 atomref=atomref[args.property],

@@ -78,4 +78,5 @@ __version__ = ".".join(map(str, __version_info__))
 - add triple_ijk before concatinate with atom embeddings
 - simply concatinate angular featrues to atom embeddings
 - add trainable_theta parameter.
+- add parameter of num_output_layer.
 """
