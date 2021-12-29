@@ -216,6 +216,10 @@ class SchNetTriple(nn.Module):
         number of gaussian filter of double distances.
     n_gaussian_triple : int, default=25
         number of gaussian filter of triple distances.
+    trainable_gaussian : bool, default=False
+
+    trainable_theta : bool, default=False
+
     n_theta : int, default=10
         number of angular filter.
     zeta : float, default=8.0
@@ -262,6 +266,7 @@ class SchNetTriple(nn.Module):
         n_gaussian_triple=25,
         trainable_gaussian=False,
         n_theta=10,
+        trainable_theta=False,
         zeta=8.0,
         normalize_filter=False,
         coupled_interactions=False,
@@ -302,7 +307,9 @@ class SchNetTriple(nn.Module):
             self.cutoffnet = None
 
         # layer for extracting triple features
-        self.triple_distribution = AngularDistribution(n_theta=n_theta, zeta=zeta)
+        self.triple_distribution = AngularDistribution(
+            n_theta=n_theta, zeta=zeta, trainable_theta=trainable_theta
+        )
         # block for computing interaction
         if coupled_interactions:
             # use the same SchNetInteraction instance (hence the same weights)
@@ -317,18 +324,18 @@ class SchNetTriple(nn.Module):
                 ]
                 * n_interactions
             )
-            self.interactions_triple = nn.ModuleList(
-                [
-                    SchNetInteractionTriple(
-                        n_atom_basis=n_atom_basis,
-                        n_gaussian_triple=n_gaussian_triple,
-                        n_theta=n_theta,
-                        n_filters=n_filters,
-                        normalize_filter=normalize_filter,
-                    )
-                ]
-                * n_interactions
-            )
+            # self.interactions_triple = nn.ModuleList(
+            #     [
+            #         SchNetInteractionTriple(
+            #             n_atom_basis=n_atom_basis,
+            #             n_gaussian_triple=n_gaussian_triple,
+            #             n_theta=n_theta,
+            #             n_filters=n_filters,
+            #             normalize_filter=normalize_filter,
+            #         )
+            #     ]
+            #     * n_interactions
+            # )
         else:
             # use one SchNetInteraction instance for each interaction
             self.interactions_double = nn.ModuleList(
@@ -343,18 +350,18 @@ class SchNetTriple(nn.Module):
                 ]
             )
 
-            self.interactions_triple = nn.ModuleList(
-                [
-                    SchNetInteractionTriple(
-                        n_atom_basis=n_atom_basis,
-                        n_gaussian_triple=n_gaussian_triple,
-                        n_theta=n_theta,
-                        n_filters=n_filters,
-                        normalize_filter=normalize_filter,
-                    )
-                    for _ in range(n_interactions)
-                ]
-            )
+            # self.interactions_triple = nn.ModuleList(
+            #     [
+            #         SchNetInteractionTriple(
+            #             n_atom_basis=n_atom_basis,
+            #             n_gaussian_triple=n_gaussian_triple,
+            #             n_theta=n_theta,
+            #             n_filters=n_filters,
+            #             normalize_filter=normalize_filter,
+            #         )
+            #         for _ in range(n_interactions)
+            #     ]
+            # )
 
         # set attributes
         self.return_intermid = return_intermid
@@ -443,32 +450,43 @@ class SchNetTriple(nn.Module):
             f_ik,
             triple_mask,
         )
+        # add them first
+        triple_ijk = torch.sum(triple_ijk, dim=2)
 
-        x_double = x
-        x_triple = x
+        # x_double = x
+        # x_triple = x
         # store intermediate representations
         if self.return_intermid:
-            xs = [(x_double, x_triple)]
+            xs = [x]
         # compute interaction block to update atomic embeddings
-        for interaction_double, interaction_triple in zip(
-            self.interactions_double, self.interactions_triple
-        ):
-            x_double = interaction_double(
-                x=x_double,
+        # for interaction_double, interaction_triple in zip(
+        #     self.interactions_double, self.interactions_triple
+        # ):
+        #     x_double = interaction_double(
+        #         x=x_double,
+        #         f_double=f_double,
+        #         neighbors=neighbors,
+        #         neighbor_mask=neighbor_mask,
+        #     )
+        #     x_triple = interaction_triple(
+        #         x=x_triple,
+        #         triple_ijk=triple_ijk,
+        #         neighbors_j=neighbors_j,
+        #         neighbors_k=neighbors_k,
+        #         triple_mask=triple_mask,
+        #     )
+        #     if self.return_intermid:
+        #         xs.append((x_double, x_triple))
+        for interaction_double in self.interactions_double:
+            x = interaction_double(
+                x=x,
                 f_double=f_double,
                 neighbors=neighbors,
                 neighbor_mask=neighbor_mask,
             )
-            x_triple = interaction_triple(
-                x=x_triple,
-                triple_ijk=triple_ijk,
-                neighbors_j=neighbors_j,
-                neighbors_k=neighbors_k,
-                triple_mask=triple_mask,
-            )
             if self.return_intermid:
-                xs.append((x_double, x_triple))
-        x = torch.cat((x_double, x_triple), dim=-1)
+                xs.append(x)
+        x = torch.cat((x, triple_ijk), dim=-1)
         if self.return_intermid:
             return x, xs
         return x
