@@ -293,7 +293,7 @@ class SchNetTriple(nn.Module):
             stop=cutoff - 0.5,
             n_gaussian=n_gaussian_triple,
             centered=False,
-            trainbale=trainable_gaussian,
+            trainable=trainable_gaussian,
         )
         # cutoff layer
         if cutoff_network is not None:
