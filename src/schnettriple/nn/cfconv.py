@@ -76,18 +76,18 @@ class CFConvDouble(nn.Module):
         y : torch.Tensor
             block output with (B x At x n_out) shape.
         """
-        # pass triple distribution through filter block (triple)
+        # pass gaussian filter value to filter generate network
         W_double = self.filternet_double(f_double)
 
         # pass initial embeddings through Dense layer
-        y = self.in2f(x)
+        y_double = self.in2f(x)
 
         # reshape y for element-wise multiplication by W
         B, At, Nbr_double = neighbors.size()
         nbh = neighbors.reshape(-1, At * Nbr_double, 1)
-        nbh = nbh.expand(-1, -1, y.size(2))
+        nbh = nbh.expand(-1, -1, y_double.size(2))
         # get j neighbors' embedding of centered atom i.
-        y_double = torch.gather(y, 1, nbh)
+        y_double = torch.gather(y_double, 1, nbh)
         y_double = y_double.view(B, At, Nbr_double, -1)
 
         # element-wise multiplication, aggregating and Dense layer
@@ -177,17 +177,17 @@ class CFConvTriple(nn.Module):
         W_triple = self.filternet_triple(triple_ijk)
 
         # pass initial embeddings through Dense layer
-        y = self.in2f(x)
+        y_triple = self.in2f(x)
 
         # reshape y for element-wise multiplication by W
         B, At, Nbr_tirple = neighbors_j.size()
         nbh_j = neighbors_j.reshape(-1, At * Nbr_tirple, 1)
-        nbh_j = nbh_j.expand(-1, -1, y.size(2))
+        nbh_j = nbh_j.expand(-1, -1, y_triple.size(2))
 
         nbh_k = neighbors_k.reshape(-1, At * Nbr_tirple, 1)
-        nbh_k = nbh_k.expand(-1, -1, y.size(2))
+        nbh_k = nbh_k.expand(-1, -1, y_triple.size(2))
         # get j and k neighbors of centered atom i. Add these atomic embeddings.
-        y_triple = torch.gather(y, 1, nbh_j) + torch.gather(y, 1, nbh_k)
+        y_triple = torch.gather(y_triple, 1, nbh_j) + torch.gather(y_triple, 1, nbh_k)
         y_triple = y_triple.view(B, At, Nbr_tirple, -1)
 
         # element-wise multiplication, aggregating and Dense layer
