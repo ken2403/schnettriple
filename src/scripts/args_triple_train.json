@@ -49,5 +49,6 @@
         500
     ],
     "trainable_gaussian": true,
+    "trainable_theta": true,
     "zeta": 8.0
 }
