@@ -5,7 +5,6 @@ from torch.autograd import grad
 import schnetpack
 from schnetpack import Properties
 from schnetpack.nn import shifted_softplus
-import schnettriple
 
 from schnettriple.nn.base import Dense
 
@@ -39,7 +38,6 @@ class MLP(nn.Module):
         n_hidden=None,
         n_layers=2,
         activation=shifted_softplus,
-        triple=True,
     ):
         super(MLP, self).__init__()
         # get list of number of nodes in input, hidden & output layers
@@ -57,24 +55,10 @@ class MLP(nn.Module):
             self.n_neurons = [n_in] + n_hidden + [n_out]
 
         # assign a Dense layer (with activation function) to each hidden layer
-        if triple:
-            layers = [
-                Dense(
-                    self.n_neurons[0],
-                    self.n_neurons[1],
-                    activation=activation,
-                    weight_init=schnettriple.nn.base.triple_uniform_(n_in // 2),
-                )
-            ]
-            layers = [
-                Dense(self.n_neurons[i], self.n_neurons[i + 1], activation=activation)
-                for i in range(1, n_layers - 1)
-            ]
-        else:
-            layers = [
-                Dense(self.n_neurons[i], self.n_neurons[i + 1], activation=activation)
-                for i in range(n_layers - 1)
-            ]
+        layers = [
+            Dense(self.n_neurons[i], self.n_neurons[i + 1], activation=activation)
+            for i in range(n_layers - 1)
+        ]
         # assign a Dense layer (without activation function) to the output layer
         layers.append(Dense(self.n_neurons[-2], self.n_neurons[-1], activation=None))
         # put all layers together to make the network
