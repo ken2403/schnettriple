@@ -17,7 +17,7 @@ def triple_uniform_(n_triple: int = 40):
         std = gain * math.sqrt(2.0 / float(fan_in + fan_out))
         a = math.sqrt(3.0) * std  # Calculate uniform bounds from standard deviation
         t = torch.nn.init._no_grad_uniform_(tensor, -a, a)
-        t[:, -n_triple:] = 1.0e-6
+        t[:, -n_triple:] = 0.0
 
         return t
 
