@@ -1,4 +1,3 @@
-from numpy import fromiter
 from schnettriple import analysis
 from schnettriple import nn
 from schnettriple import representation
