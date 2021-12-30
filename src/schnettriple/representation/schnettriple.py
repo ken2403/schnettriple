@@ -306,11 +306,11 @@ class SchNetTriple(nn.Module):
             centered=False,
             trainable=trainable_gaussian,
         )
-        # # cutoff layer
-        # if cutoff_network is not None:
-        #     self.cutoffnet = cutoff_network(cutoff)
-        # else:
-        #     self.cutoffnet = None
+        # cutoff layer
+        if cutoff_network is not None:
+            self.cutoffnet = cutoff_network(cutoff)
+        else:
+            self.cutoffnet = None
 
         # layer for extracting triple features
         self.triple_distribution = AngularDistribution(
@@ -441,27 +441,27 @@ class SchNetTriple(nn.Module):
         # expand interatomic distances (for example, GaussianFilter)
         f_double = self.radial_double(r_double)
         # f_double = f_double * neighbor_mask.unsqueeze(-1)
-        # f_ij = self.radial_triple(r_ijk[0])
-        # f_ik = self.radial_triple(r_ijk[1])
-        # if self.cutoffnet is not None:
-        #     C_double = self.cutoffnet(r_double).unsqueeze(-1)
-        #     f_double = f_double * C_double
-        #     C_ij = self.cutoffnet(r_ijk[0]).unsqueeze(-1)
-        #     C_ik = self.cutoffnet(r_ijk[1]).unsqueeze(-1)
-        #     f_ij = f_ij * C_ij
-        #     f_ik = f_ik * C_ik
+        f_ij = self.radial_triple(r_ijk[0])
+        f_ik = self.radial_triple(r_ijk[1])
+        if self.cutoffnet is not None:
+            #     C_double = self.cutoffnet(r_double).unsqueeze(-1)
+            #     f_double = f_double * C_double
+            C_ij = self.cutoffnet(r_ijk[0]).unsqueeze(-1)
+            C_ik = self.cutoffnet(r_ijk[1]).unsqueeze(-1)
+            f_ij = f_ij * C_ij
+            f_ik = f_ik * C_ik
 
         # extract angular features
-        # triple_ijk = self.triple_distribution(
-        #     r_ijk[0],
-        #     r_ijk[1],
-        #     r_ijk[2],
-        #     f_ij,
-        #     f_ik,
-        #     triple_mask,
-        # )
+        triple_ijk = self.triple_distribution(
+            r_ijk[0],
+            r_ijk[1],
+            r_ijk[2],
+            f_ij,
+            f_ik,
+            triple_mask,
+        )
         # add them first
-        # triple_ijk = torch.sum(triple_ijk, dim=2)
+        triple_ijk = torch.sum(triple_ijk, dim=2)
 
         # x_double = x
         # x_triple = x
@@ -497,7 +497,7 @@ class SchNetTriple(nn.Module):
             )
             if self.return_intermid:
                 xs.append(x)
-        # x = torch.cat((x, triple_ijk), dim=-1)
+        x = torch.cat((x, triple_ijk), dim=-1)
         if self.return_intermid:
             return x, xs
         return x
