@@ -1,80 +1,152 @@
-import os
-import logging
 import torch
 from torch import nn
-from schnetpack.nn import Dense
 from schnetpack import Properties
-from schnetpack.nn.cutoff import CosineCutoff
-from schnetpack.nn.acsf import GaussianSmearing
 from schnetpack.nn.activations import shifted_softplus
 from schnetpack.nn.neighbors import AtomDistances
 
-from schnettriple.nn.neighbors import TriplesDistances
-from schnettriple.nn.cfconv import CFConvTriple
 from schnettriple.nn.angular import AngularDistribution
+from schnettriple.nn.base import Dense, FeatureWeighting
+from schnettriple.nn.cfconv import CFConvDouble, CFConvTriple
+from schnettriple.nn.cutoff import CosineCutoff
+from schnettriple.nn.neighbors import TriplesDistances, GaussianFilter
 
 
-__all__ = ["SchNetInteractionTriple", "SchNetTriple"]
+__all__ = ["SchNetInteractionDouble", "SchNetInteractionTriple", "SchNetTriple"]
 
 
-logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
-
-
-class SchNetInteractionTriple(nn.Module):
+class SchNetInteractionDouble(nn.Module):
     """
-    SchNet interaction block for modeling interactions of atomistic systems.
+    SchNetTriple interaction block for modeling double interactions of atomistic systems.
 
     Attributes
     ----------
-        n_atom_basis : int
-            number of features to describe atomic environments.
-        n_spatial_basis : int
-            number of input features of filter-generating networks.
-        n_zeta : int
-
-        n_filters : int
-            number of filters used in continuous-filter convolution.
-        cutoff : float
-            cutoff radius.
-        cutoff_network : nn.Module, default=schnetpack.nn.CosineCutoff
-            cutoff layer.
-        normalize_filter : bool, default=False
-            if True, divide aggregated filter by number
-            of neighbors over which convolution is applied.
-
+    n_atom_basis : int
+        number of features to describe atomic environments.
+    n_gaussian_double : int
+        number of gaussian filter of double distances.
+    n_filters : int
+        number of filters used in continuous-filter convolution.
+    normalize_filter : bool, default=False
+        if True, divide aggregated filter by number
+        of neighbors over which convolution is applied.
     """
 
     def __init__(
         self,
         n_atom_basis,
-        n_spatial_basis,
-        n_zeta,
+        n_gaussian_double,
         n_filters,
-        cutoff,
-        cutoff_network=CosineCutoff,
         normalize_filter=False,
+        cutoff=6.0,
+        cutoff_net=CosineCutoff,
     ):
-        super(SchNetInteractionTriple, self).__init__()
+        super(SchNetInteractionDouble, self).__init__()
         # filter block used in interaction block
-        self.filter_network_double = nn.Sequential(
-            Dense(n_spatial_basis, n_filters, activation=shifted_softplus),
-            Dense(n_filters, n_filters, activation=shifted_softplus),
+        filternet_double = nn.Sequential(
+            Dense(n_gaussian_double, n_filters, activation=shifted_softplus),
+            Dense(n_filters, n_filters, activation=None),
         )
-        # fiter block for triple
-        self.filter_network_triple = nn.Sequential(
-            Dense(n_spatial_basis * n_zeta * 2, n_filters, activation=shifted_softplus),
-            Dense(n_filters, n_filters, activation=shifted_softplus),
-        )
-        # cutoff layer used in interaction block
-        self.cutoff_network = cutoff_network(cutoff)
         # interaction block
-        self.cfconv = CFConvTriple(
+        self.cfconv_double = CFConvDouble(
             n_atom_basis,
             n_filters,
             n_atom_basis,
-            self.filter_network_double,
-            self.filter_network_triple,
-            cutoff_network=self.cutoff_network,
+            filternet_double,
+            activation=shifted_softplus,
+            normalize_filter=normalize_filter,
+            cutoff=cutoff,
+            cutoff_net=cutoff_net,
+        )
+        # dense layer
+        self.dense = Dense(n_atom_basis, n_atom_basis, bias=True, activation=None)
+
+    def forward(
+        self,
+        x,
+        r_double,
+        f_double,
+        neighbors,
+        neighbor_mask,
+    ):
+        """
+        Compute interaction output.
+
+        B   :  Batch size
+        At  :  Total number of atoms in the batch
+        Nbr_double :  Total number of neighbors of each atom
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            input representation/embedding of atomic environments with
+            (B x At x n_atom_basis) shape.
+        f_double : torch.Tensor
+            filtered distances of double pairs with
+            (B x At x Nbr_double x n_gaussian_double) shape.
+        neighbors : torch.Tensor
+            indices of neighboring atoms with (B x At x Nbr_double) shape.
+        neighbor_mask :
+            mask to filter out non-existing neighbors introduced via padding.
+            (B x At x Nbr_double) of shape.
+
+        Returns
+        -------
+        v : torch.Tensor
+            block output with (B x At x n_atom_basis) shape.
+        """
+        v = self.cfconv_double(
+            x,
+            r_double=r_double,
+            f_double=f_double,
+            neighbors=neighbors,
+            neighbor_mask=neighbor_mask,
+        )
+        v = self.dense(v)
+        x = x + v
+
+        return x
+
+
+class SchNetInteractionTriple(nn.Module):
+    """
+    SchNetTriple interaction block for modeling triple interactions of atomistic systems.
+
+    Attributes
+    ----------
+    n_atom_basis : int
+        number of features to describe atomic environments.
+    n_gaussian_triple : int
+        number of gaussian filter of triple distances.
+    n_theta : int
+        number of angular filter.
+    n_filters : int
+        number of filters used in continuous-filter convolution.
+    normalize_filter : bool, default=False
+        if True, divide aggregated filter by number
+        of neighbors over which convolution is applied.
+    """
+
+    def __init__(
+        self,
+        n_atom_basis,
+        n_gaussian_triple,
+        n_theta,
+        n_filters,
+        normalize_filter=False,
+    ):
+        super(SchNetInteractionTriple, self).__init__()
+        # fiter block for triple
+        filternet_triple = nn.Sequential(
+            Dense(n_gaussian_triple * n_theta, n_filters, activation=shifted_softplus),
+            Dense(n_filters, n_filters, activation=None),
+        )
+
+        # interaction block
+        self.cfconv_triple = CFConvTriple(
+            n_atom_basis,
+            n_filters,
+            n_atom_basis,
+            filternet_triple,
             activation=shifted_softplus,
             normalize_filter=normalize_filter,
         )
@@ -84,116 +156,96 @@ class SchNetInteractionTriple(nn.Module):
     def forward(
         self,
         x,
-        r_double,
-        r_ij,
-        r_jk,
-        neighbors,
-        neighbor_mask,
+        triple_ijk,
         neighbors_j,
         neighbors_k,
         triple_mask,
-        d_ijk,
-        f_double=None,
     ):
         """
         Compute interaction output.
 
+        B   :  Batch size
+        At  :  Total number of atoms in the batch
+        Nbr_triple :  Total number of triple neighbors of each atom
+
         Parameters
         ----------
         x : torch.Tensor
-            input representation/embedding of atomic environments
-            with (N_b, N_a, n_atom_basis) shape.
-        r_double : torch.tensor
-
-        r_ij : torch.tensor
-
-        r_jk : torch.tensor
-
-        neighbors :
-
-        neighbor_mask :
-
+            input representation/embedding of atomic environments with
+            (B x At x n_atom_basis) shape.
+        triple_ijk : torch.tensor
+            combination of filtered distances and angular filters with
+            (B x At x Nbr_triple x n_angular) shape.
         neighbors_j : torch.Tensor
-            of (N_b, N_a, N_nbh) shape.
+            indices of atom k in tirples with (B x At x Nbr_triple) shape.
         neighbors_k : torch.Tensor
-            of (N_b, N_a, N_nbh) shape.
+            indices of atom k in tirples with (B x At x Nbr_triple) shape.
         triple_masks : torch.Tensor
-            mask to filter out non-existing neighbors
-            introduced via padding.
-        d_ijk : torch.tensor
-
-        f_double : torch.Tensor
+            mask to filter out non-existing neighbors introduced via padding.
+            (B x At x Nbr_triple) of shape.
 
         Returns
         -------
-        torch.Tensor
-            block output with (N_b, N_a, n_atom_basis) shape.
-
+        v : torch.Tensor
+            block output with (B x At x n_atom_basis) shape.
         """
-        # continuous-filter convolution interaction block followed by Dense
-        # layer
-        v = self.cfconv(
+        # continuous-filter convolution interaction block followed by Dense layer
+        v = self.cfconv_triple(
             x,
-            r_double,
-            r_ij,
-            r_jk,
-            neighbors,
-            neighbor_mask,
-            neighbors_j,
-            neighbors_k,
-            triple_mask,
-            d_ijk,
-            f_double,
+            triple_ijk=triple_ijk,
+            neighbors_j=neighbors_j,
+            neighbors_k=neighbors_k,
+            triple_mask=triple_mask,
         )
         v = self.dense(v)
+        x = x + v
 
-        return v
+        return x
 
 
 class SchNetTriple(nn.Module):
     """
-    SchNet architecture for learning representations of atomistic systems.
+    SchNetTriple architecture for learning representations of atomistic systems.
 
     Attributes
     ----------
-    n_atom_basis : int, optional, default=128
+    n_atom_basis : int, default=128
         number of features to describe atomic environments.
-        This determines the size of each embedding vector;
-        i.e. embeddings_dim.
-    n_filters : int, optional, default=128
+        This determines the size of each embedding vector; i.e. embeddings_dim.
+    n_filters : int, default=128
         number of filters used in continuous-filter convolution
-    n_interactions : int, optional, default=3
+    n_interactions : int, default=3
         number of interaction blocks.
-    cutoff : float, optional, default=5.0
+    cutoff : float, default=6.0
         cutoff radius.
-    n_gaussians : int, optional, default=25
-        number of Gaussian functions used to expand atomic distances.
-    max_zeta : int, default=1
+    n_gaussian_double : int, default=25
+        number of gaussian filter of double distances.
+    n_gaussian_triple : int, default=25
+        number of gaussian filter of triple distances.
+    trainable_gaussian : bool, default=False
 
-    n_zeta : int, default=1
+    trainable_theta : bool, default=False
 
-    normalize_filter : bool, optional, default=False
+    n_theta : int, default=10
+        number of angular filter.
+    zeta : float, default=8.0
+        zeta value of angular filter.
+    normalize_filter : bool, default=False
         if True, divide aggregated filter by number
         of neighbors over which convolution is applied.
-    coupled_interactions : bool, optional, deault=False
-        if True, share the weights
-        across interaction blocks and filter-generating networks.
-    return_intermediate : bool, optional, default=False
+    coupled_interactions : bool, deault=False
+        if True, share the weights across interaction blocks
+        and filter-generating networks.
+    return_intermid : bool, default=False
         if True, `forward` method also returns intermediate atomic representations
         after each interaction block is applied.
-    max_z : int, optional, defalut=100
+    max_z : int, defalut=100
         maximum nuclear charge allowed in database. This determines
         the size of the dictionary of embedding; i.e. num_embeddings.
-    cutoff_network : nn.Module, optional, default=schnetpack.nn.CosineCutoff
+    cutoff_network : nn.Module, default=schnetpack.nn.CosineCutoff
         cutoff layer.
-    trainable_gaussians : bool, optional, default=False
-        If True, widths and offset of Gaussian functions are adjusted
-        during training process.
-    distance_expansion_double : nn.Module, optional, default=None
-        layer for expanding interatomic distances for double in a basis.
-    distance_expansion_triple : nn.Module, optional, default=None
-        layer for expanding interatomic distances for triple in a basis.
-    charged_systems : bool, optional, default=False
+    charged_systems : bool, default=False
+        if True, there is the charge in the system.
 
     References
     ----------
@@ -215,86 +267,114 @@ class SchNetTriple(nn.Module):
         n_atom_basis=128,
         n_filters=128,
         n_interactions=3,
-        cutoff=5.0,
-        n_gaussians=25,
-        max_zeta=1,
-        n_zeta=1,
+        cutoff=6.0,
+        n_gaussian_double=25,
+        n_gaussian_triple=25,
+        trainable_gaussian=False,
+        n_theta=10,
+        trainable_theta=False,
+        zeta=8.0,
         normalize_filter=False,
         coupled_interactions=False,
-        return_intermediate=False,
+        return_intermid=False,
         max_z=100,
         cutoff_network=CosineCutoff,
-        trainable_gaussians=False,
-        distance_expansion_double=None,
-        distance_expansion_triple=None,
         charged_systems=False,
     ):
         super(SchNetTriple, self).__init__()
         self.n_atom_basis = n_atom_basis
         # make a lookup table to store embeddings for each element (up to atomic number max_z)
-        # each of which is a vector of size (N_batch * N_atoms * n_atom_basis)
+        # each of which is a vector of size (B x At x n_atom_basis)
         self.embedding = nn.Embedding(max_z, n_atom_basis, padding_idx=0)
 
         # layer for computing interatomic distances
-        self.double_ditances = AtomDistances()
-        self.triple_distances = TriplesDistances()
+        self.ditances_double = AtomDistances()
+        self.distances_triple = TriplesDistances()
 
         # layer for expanding interatomic distances in a basis
-        if distance_expansion_double is None:
-            self.distance_expansion_double = GaussianSmearing(
-                0.0, cutoff, n_gaussians, centered=False, trainable=trainable_gaussians
-            )
+        self.radial_double = GaussianFilter(
+            start=0.0,
+            stop=cutoff - 0.5,
+            n_gaussian=n_gaussian_double,
+            centered=False,
+            trainable=trainable_gaussian,
+        )
+        self.radial_triple = GaussianFilter(
+            start=0.0,
+            stop=cutoff - 0.5,
+            n_gaussian=n_gaussian_triple,
+            centered=False,
+            trainable=trainable_gaussian,
+        )
+        # cutoff layer
+        if cutoff_network is not None:
+            self.cutoffnet = cutoff_network(cutoff)
         else:
-            self.distance_expansion_double = distance_expansion_double
-
-        if distance_expansion_triple is None:
-            self.distance_expansion_triple = GaussianSmearing(
-                0.0, cutoff, n_gaussians, centered=False, trainable=trainable_gaussians
-            )
-        else:
-            self.distance_expansion_triple = distance_expansion_triple
+            self.cutoffnet = None
 
         # layer for extracting triple features
         self.triple_distribution = AngularDistribution(
-            max_zeta=max_zeta,
-            n_zeta=n_zeta,
+            n_theta=n_theta, zeta=zeta, trainable_theta=trainable_theta
         )
         # block for computing interaction
         if coupled_interactions:
             # use the same SchNetInteraction instance (hence the same weights)
-            self.interactions = nn.ModuleList(
+            self.interactions_double = nn.ModuleList(
                 [
-                    SchNetInteractionTriple(
+                    SchNetInteractionDouble(
                         n_atom_basis=n_atom_basis,
-                        n_spatial_basis=n_gaussians,
-                        n_zeta=n_zeta,
+                        n_gaussian_double=n_gaussian_double,
                         n_filters=n_filters,
+                        normalize_filter=normalize_filter,
                         cutoff=cutoff,
                         cutoff_network=cutoff_network,
-                        normalize_filter=normalize_filter,
                     )
                 ]
                 * n_interactions
             )
+            # self.interactions_triple = nn.ModuleList(
+            #     [
+            #         SchNetInteractionTriple(
+            #             n_atom_basis=n_atom_basis,
+            #             n_gaussian_triple=n_gaussian_triple,
+            #             n_theta=n_theta,
+            #             n_filters=n_filters,
+            #             normalize_filter=normalize_filter,
+            #         )
+            #     ]
+            #     * n_interactions
+            # )
         else:
             # use one SchNetInteraction instance for each interaction
-            self.interactions = nn.ModuleList(
+            self.interactions_double = nn.ModuleList(
                 [
-                    SchNetInteractionTriple(
+                    SchNetInteractionDouble(
                         n_atom_basis=n_atom_basis,
-                        n_spatial_basis=n_gaussians,
-                        n_zeta=n_zeta,
+                        n_gaussian_double=n_gaussian_double,
                         n_filters=n_filters,
-                        cutoff=cutoff,
-                        cutoff_network=cutoff_network,
                         normalize_filter=normalize_filter,
+                        cutoff=cutoff,
+                        cutoff_net=cutoff_network,
                     )
                     for _ in range(n_interactions)
                 ]
             )
 
+            # self.interactions_triple = nn.ModuleList(
+            #     [
+            #         SchNetInteractionTriple(
+            #             n_atom_basis=n_atom_basis,
+            #             n_gaussian_triple=n_gaussian_triple,
+            #             n_theta=n_theta,
+            #             n_filters=n_filters,
+            #             normalize_filter=normalize_filter,
+            #         )
+            #         for _ in range(n_interactions)
+            #     ]
+            # )
+
         # set attributes
-        self.return_intermediate = return_intermediate
+        self.return_intermid = return_intermid
         self.charged_systems = charged_systems
         if charged_systems:
             self.charge = nn.Parameter(torch.Tensor(1, n_atom_basis))
@@ -304,6 +384,9 @@ class SchNetTriple(nn.Module):
         """
         Compute atomic representations/embeddings.
 
+        B   :  Batch size
+        At  :  Total number of atoms in the batch
+
         Parameters
         ----------
         inputs : dict of torch.Tensor
@@ -311,12 +394,10 @@ class SchNetTriple(nn.Module):
 
         Returns
         -------
-        torch.Tensor
-            atom-wise representation.
-        list of torch.Tensor
-            intermediate atom-wise representations,
-            if return_intermediate=True was used.
-
+        x : torch.Tensor
+            atom-wise representation. (B x At x n_atom_basis) of shape.
+        xs : list of torch.Tensor
+            intermediate atom-wise representations, if return_intermid=True was used.
         """
         # get tensors from input dictionary
         atomic_numbers = inputs[Properties.Z]
@@ -343,12 +424,11 @@ class SchNetTriple(nn.Module):
             x = x + charge
 
         # compute double distances of every atom to its neighbors
-        r_double = self.double_ditances(
+        r_double = self.ditances_double(
             positions, neighbors, cell, cell_offset, neighbor_mask=neighbor_mask
         )
-        r_double[neighbor_mask == 0] = 100
         # compute tirple distances of every atom to its neighbors
-        r_ijk = self.triple_distances(
+        r_ijk = self.distances_triple(
             positions,
             neighbors_j,
             neighbors_k,
@@ -357,44 +437,67 @@ class SchNetTriple(nn.Module):
             cell=cell,
             cell_offsets=cell_offset,
         )
-        r_ijk[0][triple_mask == 0] = 100
-        r_ijk[1][triple_mask == 0] = 100
-        r_ijk[2][triple_mask == 0] = 100
-        # expand interatomic distances (for example, Gaussian smearing)
-        f_double = self.distance_expansion_double(r_double)
-        f_ij = self.distance_expansion_triple(r_ijk[0])
-        f_jk = self.distance_expansion_triple(r_ijk[2])
+
+        # expand interatomic distances (for example, GaussianFilter)
+        f_double = self.radial_double(r_double)
+        # f_double = f_double * neighbor_mask.unsqueeze(-1)
+        f_ij = self.radial_triple(r_ijk[0])
+        f_ik = self.radial_triple(r_ijk[1])
+        if self.cutoffnet is not None:
+            #     C_double = self.cutoffnet(r_double).unsqueeze(-1)
+            #     f_double = f_double * C_double
+            C_ij = self.cutoffnet(r_ijk[0]).unsqueeze(-1)
+            C_ik = self.cutoffnet(r_ijk[1]).unsqueeze(-1)
+            f_ij = f_ij * C_ij
+            f_ik = f_ik * C_ik
+
         # extract angular features
-        d_ijk = self.triple_distribution(
+        triple_ijk = self.triple_distribution(
             r_ijk[0],
             r_ijk[1],
             r_ijk[2],
             f_ij,
-            f_jk,
+            f_ik,
             triple_mask,
         )
+        # add them first
+        triple_ijk = torch.sum(triple_ijk, dim=2)
+
+        # x_double = x
+        # x_triple = x
         # store intermediate representations
-        if self.return_intermediate:
+        if self.return_intermid:
             xs = [x]
         # compute interaction block to update atomic embeddings
-        for interaction in self.interactions:
-            v = interaction(
-                x,
-                r_double,
-                r_ijk[0],
-                r_ijk[2],
-                neighbors,
-                neighbor_mask,
-                neighbors_j,
-                neighbors_k,
-                triple_mask,
-                d_ijk=d_ijk,
+        # for interaction_double, interaction_triple in zip(
+        #     self.interactions_double, self.interactions_triple
+        # ):
+        #     x_double = interaction_double(
+        #         x=x_double,
+        #         f_double=f_double,
+        #         neighbors=neighbors,
+        #         neighbor_mask=neighbor_mask,
+        #     )
+        #     x_triple = interaction_triple(
+        #         x=x_triple,
+        #         triple_ijk=triple_ijk,
+        #         neighbors_j=neighbors_j,
+        #         neighbors_k=neighbors_k,
+        #         triple_mask=triple_mask,
+        #     )
+        #     if self.return_intermid:
+        #         xs.append((x_double, x_triple))
+        for interaction_double in self.interactions_double:
+            x = interaction_double(
+                x=x,
+                r_double=r_double,
                 f_double=f_double,
+                neighbors=neighbors,
+                neighbor_mask=neighbor_mask,
             )
-            x = x + v
-            if self.return_intermediate:
+            if self.return_intermid:
                 xs.append(x)
-
-        if self.return_intermediate:
+        x = torch.cat((x, triple_ijk), dim=-1)
+        if self.return_intermid:
             return x, xs
         return x

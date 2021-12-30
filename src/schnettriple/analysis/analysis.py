@@ -44,13 +44,13 @@ class SchNetAnalysis:
 
         Parameters
         ----------
-            data : {'train', 'validation', 'test'}, default='train'
-                Choose which type of data you want to load.
+        data : {'train', 'validation', 'test'}, default='train'
+            Choose which type of data you want to load.
 
         Returns
         -------
-            indices: numpy.array
-                An array containing the indices of the split data.
+        indices: numpy.array
+            An array containing the indices of the split data.
 
         """
         indices = np.load(os.path.join(self.modeldir, "split.npz"))
@@ -102,21 +102,21 @@ class SchNetAnalysis:
 
         Parameters
         ----------
-            error : {'RMSE', 'MAE'}, default='RMSE'
-                Select the type of error.
-            props : tuple of shape (2,), default=('energy', 'forces')
-                Specify the properties to be plotted. Write in str.
-            units : tuple of shape (2,), default=('eV', 'eV/\u212B')
-                Specifies the units that the properties have. Write in str.
-            axes : array-like of shape (3,) or None, default=None
-                Axes to use for plotting the curves.
-            verbose : bool default=True
-                Specify whether or not to display the last error value
-                on the plot.
+        error : {'RMSE', 'MAE'}, default='RMSE'
+            Select the type of error.
+        props : tuple of shape (2,), default=('energy', 'forces')
+            Specify the properties to be plotted. Write in str.
+        units : tuple of shape (2,), default=('eV', 'eV/\u212B')
+            Specifies the units that the properties have. Write in str.
+        axes : array-like of shape (3,) or None, default=None
+            Axes to use for plotting the curves.
+        verbose : bool default=True
+            Specify whether or not to display the last error value
+            on the plot.
 
         Returns
         -------
-            plt : module
+        plt : module
         """
         self._plot_config(fontfamily=self.plot_fontfamily)
 
@@ -175,29 +175,29 @@ class SchNetAnalysis:
 
         Parameters
         ----------
-            prop : str, default=True
-                Specify the property you want to predict.
-            data : {'train', 'validation', 'test'}, default='train'
-                Choose which type of data you want to caluculate.
-            divided_by_atoms : bool, default=True
-                Specifies whether or not the output should be a value
-                for each atom in the system.
-            device : {'cpu', 'cuda'}, default='cpu'
-                Device for computation.
-            save : bool, default=True
-                Specify whether or not save the data in
-                'modeldir/io_{prop}_{data}.npz'.
-            _return : bool, default=False
-                Specify whether or not to return the calculation results.
-                If you do not want to return the calculation results,
-                set ```save=True```
+        prop : str, default=True
+            Specify the property you want to predict.
+        data : {'train', 'validation', 'test'}, default='train'
+            Choose which type of data you want to caluculate.
+        divided_by_atoms : bool, default=True
+            Specifies whether or not the output should be a value
+            for each atom in the system.
+        device : {'cpu', 'cuda'}, default='cpu'
+            Device for computation.
+        save : bool, default=True
+            Specify whether or not save the data in
+            'modeldir/io_{prop}_{data}.npz'.
+        _return : bool, default=False
+            Specify whether or not to return the calculation results.
+            If you do not want to return the calculation results,
+            set ```save=True```
 
         Returns
         -------
-            in_prop : np.array
-            out_prop : np.array
-                Return the input and output values of some property
-                as an two arrays with corresponding each indices.
+        in_prop : np.array
+        out_prop : np.array
+            Return the input and output values of some property
+            as an two arrays with corresponding each indices.
         """
         logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 
@@ -298,21 +298,22 @@ class SchNetAnalysis:
 
         Parameters
         ----------
-            model : schnetpack.atomistic.model.AtomisticModel
-                The model you want to use for prediction.
-            idx : int
-                Specify the index of the input value of the data
-                to be used for prediction.
-            device : {torch.device('cpu'), torch.device('cuda')}
-                Device for computation.
+        model : schnetpack.atomistic.model.AtomisticModel
+            The model you want to use for prediction.
+        idx : int
+            Specify the index of the input value of the data
+            to be used for prediction.
+        device : {torch.device('cpu'), torch.device('cuda')}
+            Device for computation.
+
         Returns
         -------
-            atmo_num : int
-                Number of atoms constituting the system
-            props : dict
-                Dict with input values in torch.tensor type.
-            preds : dict
-                Dict with predictions values in torch.tensor type.
+        atmo_num : int
+            Number of atoms constituting the system
+        props : dict
+            Dict with input values in torch.tensor type.
+        preds : dict
+            Dict with predictions values in torch.tensor type.
         """
         dataset = spk.AtomsData(self.dbpath, collect_triples=self.triples)
         converter = spk.data.AtomsConverter(collect_triples=self.triples, device=device)
@@ -345,20 +346,20 @@ class SchNetAnalysis:
 
         Parameters
         ----------
-            prop : str, default='energy'
-                the property to plot
-            data : tuple of size under 3, default=('train', 'validation')
-                Type of data to be plotted.
-            axes : array-like of shape (1,) or None, default=None
-                Axes to use for plotting the curves.
-            line : bool, default=True
-                Whether or not to plot the y=x line.
-            xlabel : str, default='DFT energy'
-            unit : str, default='ev/atom'
+        prop : str, default='energy'
+            the property to plot
+        data : tuple of size under 3, default=('train', 'validation')
+            Type of data to be plotted.
+        axes : array-like of shape (1,) or None, default=None
+            Axes to use for plotting the curves.
+        line : bool, default=True
+            Whether or not to plot the y=x line.
+        xlabel : str, default='DFT energy'
+        unit : str, default='ev/atom'
 
         Returns
         -------
-            plt : module
+        plt : module
         """
         self._plot_config(fontfamily=self.plot_fontfamily)
 
@@ -443,17 +444,17 @@ class SchNetAnalysis:
 
         Parameters
         ----------
-            prop : str, default='energy'
-                The property to compute.
-            data : str, default='train'
-                Type of data to be computed.
-            save : bool, default=True
-                Specify whether to save the calculation results
-                to a text file(rmse_{prop}_{data}.txt).
+        prop : str, default='energy'
+            The property to compute.
+        data : str, default='train'
+            Type of data to be computed.
+        save : bool, default=True
+            Specify whether to save the calculation results
+            to a text file(rmse_{prop}_{data}.txt).
 
         Returns
         -------
-            rmse : np.float
+        rmse : np.float
         """
         filepath = os.path.join(self.modeldir, f"io_{prop}_{data}.npz")
         try:

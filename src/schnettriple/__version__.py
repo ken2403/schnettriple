@@ -1,4 +1,4 @@
-__version_info__ = (0, 4, 5)
+__version_info__ = (3, 1, 1)
 __version__ = ".".join(map(str, __version_info__))
 """
 (0.1.5)
@@ -33,8 +33,50 @@ __version__ = ".".join(map(str, __version_info__))
 - cfconv でdoubleからtripleへの全結合層なくす
 - r_jkを使ってtriple distributionを求める
 - pbcのreshapeのところは、neighbor_jのみの和を取る形に変更
-- ！！environment_provider を'ase'とする！！
 - neighborのindexが-1とならないようにloaderを修正
 (0.4.5)
 - gussian expand した距離の値にneighbor maskを適用する
+
+(1.0.0)
+- change the use of triple featrues.
+- add polynomial cutoff layer
+(1.0.1)
+- modify angular distribution; not using torch.arccos()
+(1.0.2)
+- add NanStoppingHook
+- optimization of training process
+(1.0.3)
+- add script_utils.py and change the usage of script(only from json)
+(1.0.4)
+- multiple with node embedding of neihgbor j and neighbor k.
+(1.0.5)
+- add feture weighting to schnettriple(substute for residual networks)
+(1.0.6)
+- change the location of applying the cutoff function.
+- add residual net in cfconv
+(1.0.7)
+- remove residual net in cfconv
+(1.0.8)
+- remove feature weighting in last residual networks.
+
+(2.0.0)
+- separate double and triple interaction blocks.
+(2.1.0)
+- cutoff apply after filter generator
+- add node j and node k in CFconvTriple
+(2.1.1)
+- change angular term to BF descriptor
+(2.1.2)
+- cutoff apply before filter generator
+- change angular term to ANI-1
+(2.1.3)
+- add trainble_gaussian parameter
+(3.1.0)
+- change outputmodule; weight value for triple is 1.0e-5.
+(3.1.1)
+- remove weight init for triple (it's not meaningful)
+- add triple_ijk before concatinate with atom embeddings
+- simply concatinate angular featrues to atom embeddings
+- add trainable_theta parameter.
+- add parameter of num_output_layer.
 """

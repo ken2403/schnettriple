@@ -1,85 +1,60 @@
-import logging
+import numpy as np
 import schnetpack as spk
 from ase.data import atomic_numbers
 import torch.nn as nn
 
-from schnettriple.representation import schnettriple
+import schnettriple as snt
+from schnettriple.representation.schnettriple import SchNetTriple
+from schnettriple.nn.cutoff import CosineCutoff, PolyCutoff
+from schnettriple.utils.script_utils import ScriptError
 
 
-__all__ = ["get_representation", "get_output_module", "get_model"]
+__all__ = ["get_representation", "get_output_module", "get_model", "count_params"]
+
+
+def _get_cutoff_by_string(string_cutoff_function):
+    if string_cutoff_function == "cosine":
+        cutoff_network = CosineCutoff
+    elif string_cutoff_function == "poly":
+        cutoff_network = PolyCutoff
+    else:
+        raise NotImplementedError(
+            "cutoff_function {} is unknown".format(string_cutoff_function)
+        )
+    return cutoff_network
 
 
 def get_representation(args, train_loader=None):
     # build representation
-    if args.model == "schnet":
+    if args.model == "schnettriple":
+        cutoff_network = _get_cutoff_by_string(args.cutoff_function)
 
-        cutoff_network = spk.nn.cutoff.get_cutoff_by_string(args.cutoff_function)
-
-        return spk.representation.SchNet(
+        return SchNetTriple(
             n_atom_basis=args.features,
             n_filters=args.features,
             n_interactions=args.interactions,
             cutoff=args.cutoff,
-            n_gaussians=args.num_gaussians,
+            n_gaussian_double=args.num_gaussian_double,
+            n_gaussian_triple=args.num_gaussian_triple,
+            trainable_gaussian=args.trainable_gaussian,
+            n_theta=args.num_theta,
+            trainable_theta=args.trainable_theta,
+            zeta=args.zeta,
             cutoff_network=cutoff_network,
             normalize_filter=args.normalize_filter,
+            coupled_interactions=args.share_weights,
         )
-
-    elif args.model == "wacsf":
-        sfmode = ("weighted", "Behler")[args.behler]
-        # Convert element strings to atomic charges
-        elements = frozenset((atomic_numbers[i] for i in sorted(args.elements)))
-        representation = spk.representation.BehlerSFBlock(
-            args.radial,
-            args.angular,
-            zetas=set(args.zetas),
-            cutoff_radius=args.cutoff,
-            centered=args.centered,
-            crossterms=args.crossterms,
-            elements=elements,
-            mode=sfmode,
-        )
-        logging.info(
-            "Using {:d} {:s}-type SF".format(representation.n_symfuncs, sfmode)
-        )
-        # Standardize representation if requested
-        if args.standardize:
-            if train_loader is None:
-                raise ValueError(
-                    "Specification of a training_loader is required to standardize "
-                    "wACSF"
-                )
-            else:
-                logging.info("Computing and standardizing symmetry function statistics")
-                return spk.representation.StandardizeSF(
-                    representation, train_loader, cuda=args.cuda
-                )
-
-        else:
-            return representation
-
-    elif args.model == "schnettriple":
-        cutoff_network = spk.nn.cutoff.get_cutoff_by_string(args.cutoff_function)
-
-        return schnettriple.SchNetTriple(
-            n_atom_basis=args.features,
-            n_filters=args.features,
-            n_interactions=args.interactions,
-            cutoff=args.cutoff,
-            n_gaussians=args.num_gaussians,
-            cutoff_network=cutoff_network,
-            max_zeta=args.max_zeta,
-            n_zeta=args.n_zeta,
-            normalize_filter=args.normalize_filter,
-        )
-
     else:
-        raise NotImplementedError("Unknown model class:", args.model)
+        raise ValueError(
+            "{} is not implemented! Please set model as 'schnetriple'!".format(
+                args.model
+            )
+        )
 
 
 def get_output_module_by_str(module_str):
     if module_str == "atomwise":
-        return spk.atomistic.Atomwise
+        return snt.nn.output.Atomwise
     elif module_str == "elemental_atomwise":
         return spk.atomistic.ElementalAtomwise
     elif module_str == "dipole_moment":
@@ -91,9 +66,7 @@ def get_output_module_by_str(module_str):
     elif module_str == "electronic_spatial_sxtent":
         return spk.atomistic.ElectronicSpatialExtent
     else:
-        raise spk.utils.ScriptError(
-            "{} is not a valid output " "module!".format(module_str)
-        )
+        raise ScriptError("{} is not a valid output " "module!".format(module_str))
 
 
 def get_output_module(args, representation, mean, stddev, atomref):
@@ -122,18 +95,35 @@ def get_output_module(args, representation, mean, stddev, atomref):
             contributions=contributions,
         )
     elif output_module_str == "atomwise":
-        return spk.atomistic.output_modules.Atomwise(
-            args.features,
-            aggregation_mode=spk.utils.get_pooling_mode(args),
-            mean=mean[args.property],
-            stddev=stddev[args.property],
-            atomref=atomref[args.property],
-            property=args.property,
-            derivative=derivative,
-            negative_dr=negative_dr,
-            contributions=contributions,
-            stress=stress,
-        )
+        if args.model == "schnettriple":
+            return snt.nn.output.Atomwise(
+                n_in=args.features + (args.num_theta * args.num_gaussian_triple),
+                # n_in=args.features,
+                aggregation_mode=spk.utils.get_pooling_mode(args),
+                n_layers=args.num_output_layer,
+                mean=mean[args.property],
+                stddev=stddev[args.property],
+                atomref=atomref[args.property],
+                property=args.property,
+                derivative=derivative,
+                negative_dr=negative_dr,
+                contributions=contributions,
+                stress=stress,
+            )
+        else:
+            return spk.atomistic.output_modules.Atomwise(
+                args.features,
+                aggregation_mode=spk.utils.get_pooling_mode(args),
+                mean=mean[args.property],
+                stddev=stddev[args.property],
+                atomref=atomref[args.property],
+                property=args.property,
+                derivative=derivative,
+                negative_dr=negative_dr,
+                contributions=contributions,
+                stress=stress,
+            )
+
     elif output_module_str == "polarizability":
         return spk.atomistic.output_modules.Polarizability(
             args.features,
@@ -217,9 +207,27 @@ def get_model(args, train_loader, mean, stddev, atomref, logging=None):
         if args.parallel:
             model = nn.DataParallel(model)
         if logging:
-            logging.info(
-                "The model you built has: %d parameters" % spk.utils.count_params(model)
-            )
+            logging.info("The model you built has: %d parameters" % count_params(model))
         return model
     else:
-        raise spk.utils.ScriptError("Invalid mode selected: {}".format(args.mode))
+        raise ScriptError("Invalid mode selected: {}".format(args.mode))
+
+
+def count_params(model):
+    """
+    This function takes a model as an input and returns the number of
+    trainable parameters.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        model for which you want to count the trainable parameters.
+
+    Returns
+    -------
+    params : int
+        number of trainable parameters for the model.
+    """
+    model_parameters = filter(lambda p: p.requires_grad, model.parameters())
+    params = sum([np.prod(p.size()) for p in model_parameters])
+    return params

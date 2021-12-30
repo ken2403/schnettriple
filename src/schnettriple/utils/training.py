@@ -43,6 +43,7 @@ def get_trainer(args, model, train_loader, val_loader, metrics):
             every_n_epochs=args.log_every_n_epochs,
         )
         hooks.append(logger)
+    hooks.append(snt.train.hooks.stop.NaNStoppingHook())
 
     # setup loss function
     loss_fn = get_loss_fn(args)

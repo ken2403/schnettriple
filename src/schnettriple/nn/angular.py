@@ -1,4 +1,3 @@
-from math import cos
 import numpy as np
 import torch
 from torch import nn
@@ -9,52 +8,115 @@ __all__ = ["ThetaDistribution", "AngularDistribution"]
 
 class ThetaDistribution(nn.Module):
     """
+    The block of calculating the theta distribution used in AngularDistribution.
 
     Attributes
     ----------
+    n_theta : int, default=10
+        number of theta_s filter.
+    zeta : float, default=8.0
+        zeta value of angular filter.
+    trainable : bool, default=True
 
+
+    References
+    ----------
+    .. [1] Justin S. Smith, Olexandr Isayev, Adrian E. Roitberg.
+        ANI-1: An extensible neural network potential with DFT accuracy
+        at force field computational cost.
+        Chemical Science, 3192-3203. 2017.
     """
 
-    def __init__(self, max_zeta=1, n_zeta=1):
+    def __init__(
+        self,
+        n_theta=10,
+        zeta=8.0,
+        trainable=True,
+    ):
         super(ThetaDistribution, self).__init__()
-        zetas = torch.logspace(0, end=np.log2(max_zeta), steps=n_zeta, base=2)
-        self.register_buffer("zetas", zetas)
+        offset_theta = torch.linspace(0, np.pi, n_theta)
+        self.register_buffer("zeta", torch.FloatTensor([zeta]))
+        if trainable:
+            self.offset_theta = nn.Parameter(offset_theta)
+        else:
+            self.register_buffer("offset_theta", offset_theta)
+
+        # zeta = torch.tensor(zeta)
+        # self.register_buffer("zetas", zeta)
 
     def forward(self, cos_theta):
         """
+        Compute theta distribution with some shifts of theta_s.
+
+        B   :  Batch size
+        At  :  Total number of atoms in the batch
+        Nbr_triple :  Total number of triple neighbors of each atom
+
         Parameters
         ----------
+        cos_theta : torch.Tensor
+            value of the cosine of the triples with (B x At x Nbr_triple) of shape.
 
         Returns
         -------
-
+        theta_distribution : torch.Tensor
+            theta distribution with (B x At x Nbr_triple x n_theta) of shape.
         """
+        # diff theta
+        # 0.95 is multiplied to the cos values to prevent acos from returning NaN.
+        # (https://github.com/ken2403/torchani/blob/master/torchani/aev.py)
+        diff_theta = (
+            torch.acos(0.95 * cos_theta)[:, :, :, None]
+            - self.offset_theta[None, None, None, :]
+        )
         # calculate theta_filters
-        angular_pos = [
-            2 ** (1 - zeta) * ((1.0 - cos_theta) ** zeta).unsqueeze(-1)
-            for zeta in self.zetas
-        ]
-        angular_neg = [
-            2 ** (1 - zeta) * ((1.0 + cos_theta) ** zeta).unsqueeze(-1)
-            for zeta in self.zetas
-        ]
-        ang_total = torch.cat(angular_pos + angular_neg, -1)
+        theta_distribution = 2 ** (1.0 - self.zeta) * torch.pow(
+            1.0 + torch.cos(diff_theta), self.zeta
+        )
 
-        return ang_total
+        # # calculate theta_filters
+        # theta_pos = [
+        #     2 ** (1 - zeta) * ((1.0 - cos_theta) ** zeta).unsqueeze(-1)
+        #     for zeta in self.zetas
+        # ]
+        # theta_neg = [
+        #     2 ** (1 - zeta) * ((1.0 + cos_theta) ** zeta).unsqueeze(-1)
+        #     for zeta in self.zetas
+        # ]
+        # theta_distribution = torch.cat(theta_pos + theta_neg, -1)
+
+        return theta_distribution
 
 
 class AngularDistribution(nn.Module):
     """
-    Docstring
+    The block of calculating the angular distribution used in SchNetTriple module.
 
     Attributes
     ----------
+    n_theta : int, default=10
+        number of angular filter.
+    zeta : float, default=8.0
+        zeta value of angular filter.
 
+    References
+    ----------
+    .. [1] Justin S. Smith, Olexandr Isayev, Adrian E. Roitberg.
+        ANI-1: An extensible neural network potential with DFT accuracy
+        at force field computational cost.
+        Chemical Science, 3192-3203. 2017.
     """
 
-    def __init__(self, max_zeta=1, n_zeta=1, crossterm=False):
+    def __init__(
+        self,
+        n_theta=10,
+        zeta=8.0,
+        trainable_theta=True,
+    ):
         super(AngularDistribution, self).__init__()
-        self.theta_filter = ThetaDistribution(max_zeta, n_zeta)
+        self.theta_filter = ThetaDistribution(
+            n_theta=n_theta, zeta=zeta, trainable=trainable_theta
+        )
 
     def forward(
         self,
@@ -62,20 +124,45 @@ class AngularDistribution(nn.Module):
         r_ik,
         r_jk,
         f_ij,
-        f_jk,
+        f_ik,
         triple_mask=None,
     ):
         """
+        Compute angular distribution combination of some shifts of theta_s and some shifts of myu.
+
+        B   :  Batch size
+        At  :  Total number of atoms in the batch
+        Nbr_triple :  Total number of triple neighbors of each atom
+
         Parameters
         ----------
+        r_ij : torch.Tensor
+            distances between neighboring atoms from atom i to j with
+            (B x At x Nbr_triple) shape.
+        r_ik : torch.Tensor
+            distances between neighboring atoms from atom i to k with
+            (B x At x Nbr_triple) shape.
+        r_jk : torch.Tensor
+            distances between neighboring atoms from atom j to k with
+            (B x At x Nbr_triple) shape.
+        f_ij : torch.Tensor
+            filtered distances of triples from atom i to j.
+            (B x At x Nbr_triple x n_gaussian_double) of shape.
+        f_ik : torch.Tensor
+            filtered distances of triples from atom j to k.
+            (B x At x Nbr_triple x n_gaussian_double) of shape.
+        triple_mask : torch.Tensor or None, default=None
+            mask to filter out non-existing neighbors introduced via padding.
+            (B x At x Nbr_triple) of shape.
 
         Returns
         -------
-
+        angular_distribution : torch.Tensor
+            angular distribution with (B x At x Nbr_triple x n_angular_feature) of shape.
         """
-        n_batch, n_atoms, n_neighbors = r_ij.size()
+        B, At, Nbr_triple = r_ij.size()
         # calculate radial_filter
-        radial_filter = f_ij * f_jk
+        radial_filter = f_ij * f_ik
 
         # calculate theta_filter
         cos_theta = (torch.pow(r_ij, 2) + torch.pow(r_ik, 2) - torch.pow(r_jk, 2)) / (
@@ -89,13 +176,11 @@ class AngularDistribution(nn.Module):
             radial_filter[triple_mask == 0] = 0.0
             angular_filter[triple_mask == 0] = 0.0
 
-        # combnation of angular and radial filter
+        # combination of angular and radial filter
         angular_distribution = (
             angular_filter[:, :, :, :, None] * radial_filter[:, :, :, None, :]
         )
-        # reshape (N_batch * N_atom * N_nbh * N_filter_features)
-        angular_distribution = angular_distribution.view(
-            n_batch, n_atoms, n_neighbors, -1
-        )
+        # reshape (B x At x Nbr x n_filter_feature)
+        angular_distribution = angular_distribution.view(B, At, Nbr_triple, -1)
 
         return angular_distribution

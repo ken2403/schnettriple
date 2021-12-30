@@ -1,25 +1,40 @@
 import os
 import sys
+import pickle
+import copy
 import numpy as np
 import torch
 
 
 class Trainer:
-    r"""Class to train a model.
+    """Class to train a model.
     This contains an internal training loop which takes care of validation and can be
     extended with custom functionality using hooks.
-    Args:
-       model_path (str): path to the model directory.
-       model (torch.Module): model to be trained.
-       loss_fn (callable): training loss function.
-       optimizer (torch.optim.optimizer.Optimizer): training optimizer.
-       train_loader (torch.utils.data.DataLoader): data loader for training set.
-       validation_loader (torch.utils.data.DataLoader): data loader for validation set.
-       keep_n_checkpoints (int, optional): number of saved checkpoints.
-       checkpoint_interval (int, optional): intervals after which checkpoints is saved.
-       hooks (list, optional): hooks to customize training process.
-       loss_is_normalized (bool, optional): if True, the loss per data point will be
-           reported. Otherwise, the accumulated loss is reported.
+
+    Returns
+    -------
+    model_path : str
+        path to the model directory.
+    model : torch.nn.Module
+        model to be trained.
+    loss_fn : callable
+        training loss function.
+    optimizer : torch.optim.optimizer.Optimizer
+        training optimizer.
+    train_loader : torch.utils.data.DataLoader
+        data loader for training set.
+    validation_loader : torch.utils.data.DataLoader
+        data loader for validation set.
+    keep_n_checkpoints : int, default=3
+        number of saved checkpoints.
+    checkpoint_interval : int, default=10
+        intervals after which checkpoints is saved.
+    validation_interval : int, default=1
+        intervals after which validation calculation is saved.
+    hooks : list of schnetpack.train.hooks.Hook, optional
+        hooks to customize training process.
+    loss_is_normalized : bool, default=True
+        if True, the loss per data point will be reported. Otherwise, the accumulated loss is reported.
     """
 
     def __init__(
@@ -137,12 +152,30 @@ class Trainer:
         )
         self.state_dict = torch.load(chkpt)
 
-    def train(self, device, n_epochs=sys.maxsize, regularization=False, l1_lambda=0.01):
-        """Train the model for the given number of epochs on a specified device.
-        Args:
-            device (torch.torch.Device): device on which training takes place.
-            n_epochs (int): number of training epochs.
-        Note: Depending on the `hooks`, training can stop earlier than `n_epochs`.
+    def train(
+        self,
+        device,
+        n_epochs=sys.maxsize,
+        regularization=False,
+        l1_lambda=0.01,
+    ):
+        """
+        Train the model for the given number of epochs on a specified device.
+
+        Parameters
+        ----------
+        device : torch.torch.Device
+            device on which training takes place.
+        n_epochs : int
+            number of training epochs.
+        l1_lambda : float, default=0.01
+            coefficient of L1 regularization
+        max_norm : float, default=0.25
+            max norm of the gradients
+
+        Note
+        ----
+        Depending on the `hooks`, training can stop earlier than `n_epochs`.
         """
         self._model.to(device)
         self._optimizer_to(device)
@@ -164,13 +197,11 @@ class Trainer:
                     self.epoch -= 1
                     break
 
-                # perform training epoch
-                #                if progress:
-                #                    train_iter = tqdm(self.train_loader)
-                #                else:
                 train_iter = self.train_loader
 
                 self._model.train()
+                if device.type == "cuda":
+                    scaler = torch.cuda.amp.GradScaler()
                 for train_batch in train_iter:
                     self.optimizer.zero_grad()
 
@@ -179,8 +210,10 @@ class Trainer:
 
                     # move input to gpu, if needed
                     train_batch = {k: v.to(device) for k, v in train_batch.items()}
-                    result = self._model(train_batch)
-                    loss = self.loss_fn(train_batch, result)
+                    with torch.cuda.amp.autocast():
+                        result = self._model(train_batch)
+                        loss = self.loss_fn(train_batch, result)
+
                     # L1 regularization
                     if regularization:
                         l1_reg = torch.tensor(0.0, requires_grad=True)
@@ -188,9 +221,18 @@ class Trainer:
                             if param.requires_grad:
                                 l1_reg = l1_reg + torch.norm(param, 1)
                         loss = loss + l1_lambda * l1_reg
-                    loss.backward()
-                    self.optimizer.step()
-                    self.step += 1
+
+                    if device.type == "cuda":
+                        # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
+                        scaler.scale(loss).backward()
+                        # scaler.step() first unscales the gradients of the optimizer's assigned params.
+                        scaler.step(self.optimizer)
+                        # Updates the scale for next iteration.
+                        scaler.update()
+                        # after_model = copy.deepcopy(self._model)
+                    else:
+                        loss.backward()
+                        self.optimizer.step()
 
                     for h in self.hooks:
                         h.on_batch_end(self, train_batch, result, loss)

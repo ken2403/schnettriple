@@ -1,38 +1,33 @@
 import torch
 from torch import nn
-from schnetpack.nn import Dense
 from schnetpack.nn.base import Aggregate
 
+from schnettriple.nn.base import Dense
+from schnettriple.nn.cutoff import CosineCutoff
 
-__all__ = ["CFConvTriple"]
+
+__all__ = ["CFConvDouble", "CFConvTriple"]
 
 
-class CFConvTriple(nn.Module):
+class CFConvDouble(nn.Module):
     """
-    Continuous-filter convolution block used in SchNetTriple module.
+    Continuous-filter convolution block used in SchNetInteractionDouble module.
 
     Attributes
     ----------
-        n_in : int
-            number of input (i.e. atomic embedding) dimensions.
-        n_filters : int
-            number of filter dimensions.
-        n_out : int
-            number of output dimensions.
-        filter_network_double : nn.Module
-            filter block for double propperties.
-        filter_network_triple : nn.Module
-            filter block for triple properties.
-        cutoff_network : nn.Module, default=None
-            if None, no cut off function is used.
-        activation : callable, default=None
-            if None, no activation function is used.
-        normalize_filter : bool, default=False
-            If True, normalize filter to the number of
-            neighbors when aggregating.
-        axis : int, default=2
-            axis over which convolution should be applied.
-
+    n_in : int
+        number of input (i.e. atomic embedding) dimensions.
+    n_filters : int
+        number of filter dimensions.
+    n_out : int
+        number of output dimensions.
+    filternet_double : nn.Module
+        filter block for double propperties.
+    activation : callable, default=None
+        if None, no activation function is used.
+    normalize_filter : bool, default=False
+        If True, normalize filter to the number of
+        neighbors when aggregating.
     """
 
     def __init__(
@@ -40,124 +35,176 @@ class CFConvTriple(nn.Module):
         n_in,
         n_filters,
         n_out,
-        filter_network_double,
-        filter_network_triple,
-        cutoff_network=None,
+        filternet_double,
         activation=None,
         normalize_filter=False,
-        axis=2,
+        cutoff=6.0,
+        cutoff_net=CosineCutoff,
     ):
-        super(CFConvTriple, self).__init__()
+        super(CFConvDouble, self).__init__()
         self.in2f = Dense(n_in, n_filters, bias=False, activation=None)
         self.f2out = Dense(n_filters, n_out, bias=True, activation=activation)
-        self.filter_network_double = filter_network_double
-        self.filter_network_triple = filter_network_triple
-        self.cutoff_network = cutoff_network
-        self.agg = Aggregate(axis=axis, mean=normalize_filter)
+        self.filternet_double = filternet_double
+        self.cutoff_net = cutoff_net(cutoff)
+        self.agg = Aggregate(axis=2, mean=normalize_filter)
 
     def forward(
         self,
         x,
         r_double,
-        r_ij,
-        r_jk,
+        f_double,
         neighbors,
         neighbor_mask,
-        neighbors_j,
-        neighbors_k,
-        triple_mask,
-        d_ijk,
-        f_double=None,
     ):
         """
         Compute convolution block.
 
+        B   :  Batch size
+        At  :  Total number of atoms in the batch
+        Nbr_double :  Total number of neighbors of each atom
+
         Parameters
         ----------
         x : torch.Tensor
-            input representation/embedding of atomic environments
-            with (N_b, N_a, n_in) shape.
-        r_double :
-
-        r_ij :
-
-        r_jk :
-
-        neighbors :
-
-        neighbor_mask :
-
-        neighbors_j : torch.Tensor
-            of (N_b, N_a, N_nbh) shape.
-        neighbors_k : torch.Tensor
-            of (N_b, N_a, N_nbh) shape.
-        triple_masks : torch.Tensor
-            mask to filter out non-existing neighbors
-            introduced via padding.
-        d_ijk : torch.tensor
-
+            input representation/embedding of atomic environments with (B x At x n_in) shape.
         f_double : torch.tensor
-
+            filtered distances of double pairs with
+            (B x At x Nbr_double x n_gaussian_double) shape.
+        neighbors : torch.Tensor
+            indices of neighboring atoms with (B x At x Nbr_double) shape.
+        neighbor_mask : torch.Tensor
+            mask to filter out non-existing neighbors introduced via padding.
+            (B x At x Nbr_double) of shape.
 
         Returns
         -------
-        torch.Tensor
-            block output with (N_batch, N_atoms, N_out) shape.
-
+        y : torch.Tensor
+            block output with (B x At x n_out) shape.
         """
-        if f_double is None:
-            f_double = r_double.unsqueeze(-1)
-
-        # pass expanded interactomic distances through filter block (double)
-        W_double = self.filter_network_double(f_double)
-        # apply cutoff
-        if self.cutoff_network is not None:
-            C_double = self.cutoff_network(r_double)
-            W_double = W_double * C_double.unsqueeze(-1)
-
-        # pass triple distribution through filter block (triple)
-        W_triple = self.filter_network_triple(d_ijk)
-
-        # apply cutoff
-        if self.cutoff_network is not None:
-            C_ij = self.cutoff_network(r_ij)
-            C_jk = self.cutoff_network(r_jk)
-            W_triple = W_triple * C_ij.unsqueeze(-1) * C_jk.unsqueeze(-1)
+        # pass gaussian filter value to filter generate network
+        W_double = self.filternet_double(f_double)
+        # apply cutoff net
+        C_double = self.cutoff_net(r_double)
+        W_double = W_double * C_double.unsqueeze(-1)
 
         # pass initial embeddings through Dense layer
-        y = self.in2f(x)
+        y_double = self.in2f(x)
 
         # reshape y for element-wise multiplication by W
-        nbh_size = neighbors.size()
-        nbh = neighbors.reshape(-1, nbh_size[1] * nbh_size[2], 1)
-        nbh = nbh.expand(-1, -1, y.size(2))
-        y = torch.gather(y, 1, nbh)
-        y = y.view(nbh_size[0], nbh_size[1], nbh_size[2], -1)
+        B, At, Nbr_double = neighbors.size()
+        nbh = neighbors.reshape(-1, At * Nbr_double, 1)
+        nbh = nbh.expand(-1, -1, y_double.size(2))
+        # get j neighbors' embedding of centered atom i.
+        y_double = torch.gather(y_double, 1, nbh)
+        y_double = y_double.view(B, At, Nbr_double, -1)
 
         # element-wise multiplication, aggregating and Dense layer
-        y = y * W_double
-        y = self.agg(y, neighbor_mask)
-
-        # reshape y for element-wise multiplication by W
-        nbh_j_size = neighbors_j.size()
-        nbh_j = neighbors_j.reshape(-1, nbh_j_size[1] * nbh_j_size[2], 1)
-        nbh_j = nbh_j.expand(-1, -1, y.size(2))
-        # r_ij_nbh = r_ij.reshape(-1, nbh_j_size[1] * nbh_j_size[2], 1)
-        # r_ij_nbh = r_ij_nbh.expand(-1, -1, y.size(2))
-        # nbh_k_size = neighbors_k.size()
-        # nbh_k = neighbors_k.reshape(-1, nbh_k_size[1] * nbh_k_size[2], 1)
-        # nbh_k = nbh_k.expand(-1, -1, y.size(2))
-        # r_ik_nbh = r_ik.reshape(-1, nbh_j_size[1] * nbh_j_size[2], 1)
-        # r_ik_nbh = r_ik_nbh.expand(-1, -1, y.size(2))
-        # v0.4.4 nbr_k is unused.
-        y = torch.gather(y, 1, nbh_j)
-        y = y.view(nbh_j_size[0], nbh_j_size[1], nbh_j_size[2], -1)
-
-        # element-wise multiplication, aggregating and Dense layer
-        y = y * W_triple
-        y = self.agg(y, triple_mask)
+        y_double = y_double * W_double
+        y_double = self.agg(y_double, neighbor_mask)
+        # # residual net
+        # y_double = y_double + y
 
         # output embbedings through Dense layer
-        y = self.f2out(y)
+        y_double = self.f2out(y_double)
 
-        return y
+        return y_double
+
+
+class CFConvTriple(nn.Module):
+    """
+    Continuous-filter convolution block used in SchNetInteractionTriple module.
+
+    Attributes
+    ----------
+    n_in : int
+        number of input (i.e. atomic embedding) dimensions.
+    n_filters : int
+        number of filter dimensions.
+    n_out : int
+        number of output dimensions.
+    filternet_triple : nn.Module
+        filter block for triple properties.
+    activation : callable, default=None
+        if None, no activation function is used.
+    normalize_filter : bool, default=False
+        If True, normalize filter to the number of
+        neighbors when aggregating.
+    """
+
+    def __init__(
+        self,
+        n_in,
+        n_filters,
+        n_out,
+        filternet_triple,
+        activation=None,
+        normalize_filter=False,
+    ):
+        super(CFConvTriple, self).__init__()
+        self.in2f = Dense(n_in, n_filters, bias=False, activation=None)
+        self.f2out = Dense(n_filters, n_out, bias=True, activation=activation)
+        self.filternet_triple = filternet_triple
+        self.agg = Aggregate(axis=2, mean=normalize_filter)
+
+    def forward(
+        self,
+        x,
+        triple_ijk,
+        neighbors_j,
+        neighbors_k,
+        triple_mask,
+    ):
+        """
+        Compute convolution block.
+
+        B   :  Batch size
+        At  :  Total number of atoms in the batch
+        Nbr_triple :  Total number of triple neighbors of each atom
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            input representation/embedding of atomic environments with (B x At x n_in) shape.
+        triple_ijk : torch.tensor
+            combination of filtered distances and angular filters with
+            (B x At x Nbr_triple x n_angular) shape.
+        neighbors_j : torch.Tensor
+            indices of atom j in tirples with (B x At x Nbr_triple) shape.
+        neighbors_k : torch.Tensor
+            indices of atom k in tirples with (B x At x Nbr_triple) shape.
+        triple_mask : torch.Tensor
+            mask to filter out non-existing neighbors introduced via padding.
+            (B x At x Nbr_triple) of shape.
+
+        Returns
+        -------
+        y : torch.Tensor
+            block output with (B x At x n_out) shape.
+        """
+        # pass triple distribution through filter block (triple)
+        W_triple = self.filternet_triple(triple_ijk)
+
+        # pass initial embeddings through Dense layer
+        y_triple = self.in2f(x)
+
+        # reshape y for element-wise multiplication by W
+        B, At, Nbr_tirple = neighbors_j.size()
+        nbh_j = neighbors_j.reshape(-1, At * Nbr_tirple, 1)
+        nbh_j = nbh_j.expand(-1, -1, y_triple.size(2))
+
+        nbh_k = neighbors_k.reshape(-1, At * Nbr_tirple, 1)
+        nbh_k = nbh_k.expand(-1, -1, y_triple.size(2))
+        # get j and k neighbors of centered atom i. Add these atomic embeddings.
+        y_triple = torch.gather(y_triple, 1, nbh_j) + torch.gather(y_triple, 1, nbh_k)
+        y_triple = y_triple.view(B, At, Nbr_tirple, -1)
+
+        # element-wise multiplication, aggregating and Dense layer
+        y_triple = y_triple * W_triple
+        y_triple = self.agg(y_triple, triple_mask)
+        # # residual net
+        # y_triple = y_triple + y
+
+        # output embbedings through Dense layer
+        y_triple = self.f2out(y_triple)
+
+        return y_triple
