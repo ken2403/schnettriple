@@ -162,6 +162,7 @@ class SchNetAnalysis:
 
     def inout_property(
         self,
+        cutoff,
         prop="energy",
         data="train",
         divided_by_atoms=True,
@@ -175,6 +176,8 @@ class SchNetAnalysis:
 
         Parameters
         ----------
+        cutoff : float
+            cutoff radious.
         prop : str, default=True
             Specify the property you want to predict.
         data : {'train', 'validation', 'test'}, default='train'
@@ -214,7 +217,7 @@ class SchNetAnalysis:
         for idx in indexes:
             idx = int(idx)
             atom_num, props, preds = self._pred_one_schnet(
-                model=bestmodel, idx=idx, device=device
+                model=bestmodel, cutoff=cutoff, idx=idx, device=device
             )
             ndim, in_data, out_data = self._make_io_property_data(
                 prop, atom_num, props, preds, divided_by_atoms=divided_by_atoms
@@ -292,7 +295,7 @@ class SchNetAnalysis:
 
         return ndim, in_data, out_data
 
-    def _pred_one_schnet(self, model, idx, device):
+    def _pred_one_schnet(self, model, cutoff, idx, device):
         """
         Return the predicted value in schnet for a single input value.
 
@@ -300,6 +303,8 @@ class SchNetAnalysis:
         ----------
         model : schnetpack.atomistic.model.AtomisticModel
             The model you want to use for prediction.
+        cutoff : float
+            cutoff radious.
         idx : int
             Specify the index of the input value of the data
             to be used for prediction.
@@ -316,7 +321,11 @@ class SchNetAnalysis:
             Dict with predictions values in torch.tensor type.
         """
         dataset = spk.AtomsData(self.dbpath, collect_triples=self.triples)
-        converter = spk.data.AtomsConverter(collect_triples=self.triples, device=device)
+        converter = spk.data.AtomsConverter(
+            environment_provider=spk.environment.AseEnvironmentProvider(cutoff),
+            collect_triples=self.triples,
+            device=device,
+        )
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
