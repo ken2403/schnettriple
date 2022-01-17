@@ -24,7 +24,6 @@
     "split_path": null,
     "stress": null,
 
-
     "batch_size": 10,
     "cutoff": 6.0,
     "cutoff_function": "cosine",
@@ -49,7 +48,8 @@
         1000,
         500
     ],
-    "trainable_gaussian": true,
+    "trainable_gaussian_double": true,
+    "trainable_gaussian_triple": true,
     "trainable_theta": true,
     "zeta": 8.0
 }
