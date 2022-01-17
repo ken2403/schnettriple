@@ -1,13 +1,12 @@
 import os
 import sys
-import pickle
-import copy
 import numpy as np
 import torch
 
 
 class Trainer:
-    """Class to train a model.
+    """
+    Class to train a model.
     This contains an internal training loop which takes care of validation and can be
     extended with custom functionality using hooks.
 
@@ -168,6 +167,8 @@ class Trainer:
             device on which training takes place.
         n_epochs : int
             number of training epochs.
+        regularization : bool, default=False
+            If true, regularize the learning parameters.
         l1_lambda : float, default=0.01
             coefficient of L1 regularization
         max_norm : float, default=0.25
