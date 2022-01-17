@@ -56,7 +56,7 @@ class CosineCutoff(nn.Module):
 
 class PolyCutoff(nn.Module):
     """
-    Class of Polynomial cutoff.
+    Class of Polynomial cutoff function.
 
     Attributes
     ----------
