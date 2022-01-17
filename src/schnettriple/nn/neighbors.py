@@ -7,13 +7,13 @@ __all__ = ["TriplesDistances", "GaussianFilter"]
 
 
 def triple_distances(
-    positions,
-    neighbors_j,
-    neighbors_k,
-    offset_idx_j=None,
-    offset_idx_k=None,
-    cell=None,
-    cell_offsets=None,
+    positions: Tensor,
+    neighbors_j: Tensor,
+    neighbors_k: Tensor,
+    offset_idx_j: Tensor = None,
+    offset_idx_k: Tensor = None,
+    cell: Tensor = None,
+    cell_offsets: Tensor = None,
 ):
     """
     Get all distances between atoms forming a triangle with the central atoms.
@@ -44,10 +44,10 @@ def triple_distances(
     Returns
     -------
     r_ij : torch.Tensor
-        Distance between central atom and neighbor j
+        Distance between central atom i and neighbor j
         with (Bx At x Nbr_triple) shape.
     r_ik : torch.Tensor
-        Distance between central atom and neighbor k
+        Distance between central atom i and neighbor k
         with (Bx At x Nbr_triple) shape.
     r_jk : torch.Tensor
         Distance between neighbors j and k
@@ -117,13 +117,13 @@ class TriplesDistances(nn.Module):
 
     def forward(
         self,
-        positions,
-        neighbors_j,
-        neighbors_k,
-        offset_idx_j=None,
-        offset_idx_k=None,
-        cell=None,
-        cell_offsets=None,
+        positions: Tensor,
+        neighbors_j: Tensor,
+        neighbors_k: Tensor,
+        offset_idx_j: Tensor = None,
+        offset_idx_k: Tensor = None,
+        cell: Tensor = None,
+        cell_offsets: Tensor = None,
     ):
         """
         Parameters
@@ -146,10 +146,10 @@ class TriplesDistances(nn.Module):
         Returns
         -------
         r_ij : torch.Tensor
-            Distance between central atom and neighbor j
+            Distance between central atom i and neighbor j
             with (Bx At x Nbr_triple) shape.
         r_ik : torch.Tensor
-            Distance between central atom and neighbor k
+            Distance between central atom i and neighbor k
             with (Bx At x Nbr_triple) shape.
         r_jk : torch.Tensor
             Distance between neighbors j and k
@@ -166,7 +166,12 @@ class TriplesDistances(nn.Module):
         )
 
 
-def gaussian_filter(distances, offsets, widths, centered=False):
+def gaussian_filter(
+    distances: Tensor,
+    offsets: Tensor,
+    widths: Tensor,
+    centered: bool = False,
+):
     """
     Filtered interatomic distance values using Gaussian functions.
 
@@ -184,8 +189,8 @@ def gaussian_filter(distances, offsets, widths, centered=False):
     widths : torch.Tensor
         width values of Gaussian functions.
     centered : bool, default=False
-        If True, Gaussians are centered at the origin and the offsets are used
-        to as their widths.
+        If True, Gaussians are centered at the origin and
+        the offsets are used to as their widths.
 
     Returns
     -------
@@ -227,8 +232,8 @@ class GaussianFilter(nn.Module):
         total number of Gaussian functions, :math:`N_g`.
     centered : bool, default=False
         If False, Gaussian's centered values are varied at the offset values and the width value is constant.
-    trainable : bool, default=False
-
+    trainable : bool, default=True
+        If True, widths and offset of Gaussian functions are adjusted during training process.
     """
 
     def __init__(
@@ -237,7 +242,7 @@ class GaussianFilter(nn.Module):
         stop: float = 6.0,
         n_gaussian: int = 100,
         centered: bool = False,
-        trainable: bool = False,
+        trainable: bool = True,
     ) -> None:
         super().__init__()
         offsets = torch.linspace(start=start, end=stop, steps=n_gaussian)
