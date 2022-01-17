@@ -38,7 +38,6 @@ def get_representation(args, train_loader=None):
             trainable_gaussian_double=args.trainable_gaussian_double,
             n_gaussian_triple=args.num_gaussian_triple,
             trainable_gaussian_triple=args.trainable_gaussian_triple,
-            trainable_gaussian=args.trainable_gaussian,
             n_theta=args.num_theta,
             trainable_theta=args.trainable_theta,
             zeta=args.zeta,
