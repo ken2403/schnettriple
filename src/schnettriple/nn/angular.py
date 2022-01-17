@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from torch import Tensor
 from torch import nn
 
 
@@ -13,11 +14,11 @@ class ThetaDistribution(nn.Module):
     Attributes
     ----------
     n_theta : int, default=10
-        number of theta_s filter.
+        number of theta_s values.
     zeta : float, default=8.0
         zeta value of angular filter.
     trainable : bool, default=True
-
+        If True, offset values are adjusted during training process.
 
     References
     ----------
@@ -29,22 +30,20 @@ class ThetaDistribution(nn.Module):
 
     def __init__(
         self,
-        n_theta=10,
-        zeta=8.0,
-        trainable=True,
+        n_theta: int = 10,
+        zeta: float = 8.0,
+        trainable: bool = True,
     ):
         super(ThetaDistribution, self).__init__()
-        offset_theta = torch.linspace(0, np.pi, n_theta)
+        offset_theta = np.linspace(0, 2 * np.pi, endpoint=False, num=n_theta)
+        offset_theta = torch.tensor(offset_theta, dtype=torch.float32)
         self.register_buffer("zeta", torch.FloatTensor([zeta]))
         if trainable:
             self.offset_theta = nn.Parameter(offset_theta)
         else:
             self.register_buffer("offset_theta", offset_theta)
 
-        # zeta = torch.tensor(zeta)
-        # self.register_buffer("zetas", zeta)
-
-    def forward(self, cos_theta):
+    def forward(self, cos_theta: Tensor):
         """
         Compute theta distribution with some shifts of theta_s.
 
@@ -74,17 +73,6 @@ class ThetaDistribution(nn.Module):
             1.0 + torch.cos(diff_theta), self.zeta
         )
 
-        # # calculate theta_filters
-        # theta_pos = [
-        #     2 ** (1 - zeta) * ((1.0 - cos_theta) ** zeta).unsqueeze(-1)
-        #     for zeta in self.zetas
-        # ]
-        # theta_neg = [
-        #     2 ** (1 - zeta) * ((1.0 + cos_theta) ** zeta).unsqueeze(-1)
-        #     for zeta in self.zetas
-        # ]
-        # theta_distribution = torch.cat(theta_pos + theta_neg, -1)
-
         return theta_distribution
 
 
@@ -98,6 +86,8 @@ class AngularDistribution(nn.Module):
         number of angular filter.
     zeta : float, default=8.0
         zeta value of angular filter.
+    trainable_theta : bool, default=True
+        If True, offset values are adjusted during training process.
 
     References
     ----------
@@ -109,9 +99,9 @@ class AngularDistribution(nn.Module):
 
     def __init__(
         self,
-        n_theta=10,
-        zeta=8.0,
-        trainable_theta=True,
+        n_theta: int = 10,
+        zeta: float = 8.0,
+        trainable_theta: bool = True,
     ):
         super(AngularDistribution, self).__init__()
         self.theta_filter = ThetaDistribution(
@@ -120,12 +110,12 @@ class AngularDistribution(nn.Module):
 
     def forward(
         self,
-        r_ij,
-        r_ik,
-        r_jk,
-        f_ij,
-        f_ik,
-        triple_mask=None,
+        r_ij: Tensor,
+        r_ik: Tensor,
+        r_jk: Tensor,
+        f_ij: Tensor,
+        f_ik: Tensor,
+        triple_mask: Tensor = None,
     ):
         """
         Compute angular distribution combination of some shifts of theta_s and some shifts of myu.
@@ -180,7 +170,7 @@ class AngularDistribution(nn.Module):
         angular_distribution = (
             angular_filter[:, :, :, :, None] * radial_filter[:, :, :, None, :]
         )
-        # reshape (B x At x Nbr x n_filter_feature)
+        # reshape (B x At x Nbr x n_angular_feature)
         angular_distribution = angular_distribution.view(B, At, Nbr_triple, -1)
 
         return angular_distribution
