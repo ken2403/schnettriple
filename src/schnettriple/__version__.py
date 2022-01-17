@@ -1,4 +1,4 @@
-__version_info__ = (3, 1, 1)
+__version_info__ = (3, 1, 2)
 __version__ = ".".join(map(str, __version_info__))
 """
 (0.1.5)
@@ -79,4 +79,6 @@ __version__ = ".".join(map(str, __version_info__))
 - simply concatinate angular featrues to atom embeddings
 - add trainable_theta parameter.
 - add parameter of num_output_layer.
+(3.1.2)
+- modify offset_theta (src/schnettriple/nn/angular.py)
 """
