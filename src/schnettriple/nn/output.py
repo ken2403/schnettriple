@@ -16,19 +16,26 @@ class AtomwiseError(Exception):
 
 
 class MLP(nn.Module):
-    """Multiple layer fully connected perceptron neural network.
-    Args:
-        n_in (int): number of input nodes.
-        n_out (int): number of output nodes.
-        n_hidden (list of int or int, optional): number hidden layer nodes.
-            If an integer, same number of node is used for all hidden layers resulting
-            in a rectangular network.
-            If None, the number of neurons is divided by two after each layer starting
-            n_in resulting in a pyramidal network.
-        n_layers (int, optional): number of layers.
-        activation (callable, optional): activation function. All hidden layers would
-            the same activation function except the output layer that does not apply
-            any activation function.
+    """
+    Multiple layer fully connected perceptron neural network.
+
+    Parameters
+    ----------
+    n_in : int
+        number of input nodes.
+    n_out : int
+        number of output nodes.
+    n_hidden : list of int or int or None, default=None
+        number hidden layer nodes.
+        If an integer, same number of node is used for all hidden layers resulting
+        in a rectangular network.
+        If None, the number of neurons is divided by two after each layer starting
+        n_in resulting in a pyramidal network.
+    n_layers : int, default=2
+        number of hidden layers.
+    activation : callable, default=schnetpack.nn.activations.shifted_softplus
+        activation function. All hidden layers would the same activation function
+        except the output layer that does not apply any activation function.
     """
 
     def __init__(
@@ -65,53 +72,72 @@ class MLP(nn.Module):
         self.out_net = nn.Sequential(*layers)
 
     def forward(self, inputs):
-        """Compute neural network output.
-        Args:
-            inputs (torch.Tensor): network input.
-        Returns:
-            torch.Tensor: network output.
+        """
+        Compute neural network output.
+
+        Parameters
+        ----------
+        inputs : torch.Tensor
+            network input.
+
+        Returns
+        -------
+        torch.Tensor
+            network output.
         """
         return self.out_net(inputs)
 
 
 class Atomwise(nn.Module):
     """
-    Predicts atom-wise contributions and accumulates global prediction, e.g. for the
-    energy.
-    Args:
-        n_in (int): input dimension of representation
-        n_out (int): output dimension of target property (default: 1)
-        aggregation_mode (str): one of {sum, avg} (default: sum)
-        n_layers (int): number of nn in output network (default: 2)
-        n_neurons (list of int or None): number of neurons in each layer of the output
-            network. If `None`, divide neurons by 2 in each layer. (default: None)
-        activation (function): activation function for hidden nn
-            (default: spk.nn.activations.shifted_softplus)
-        property (str): name of the output property (default: "y")
-        contributions (str or None): Name of property contributions in return dict.
-            No contributions returned if None. (default: None)
-        derivative (str or None): Name of property derivative. No derivative
-            returned if None. (default: None)
-        negative_dr (bool): Multiply the derivative with -1 if True. (default: False)
-        stress (str or None): Name of stress property. Compute the derivative with
-            respect to the cell parameters if not None. (default: None)
-        create_graph (bool): If False, the graph used to compute the grad will be
-            freed. Note that in nearly all cases setting this option to True is not
-            needed and often can be worked around in a much more efficient way.
-            Defaults to the value of create_graph. (default: False)
-        mean (torch.Tensor or None): mean of property
-        stddev (torch.Tensor or None): standard deviation of property (default: None)
-        atomref (torch.Tensor or None): reference single-atom properties. Expects
-            an (max_z + 1) x 1 array where atomref[Z] corresponds to the reference
-            property of element Z. The value of atomref[0] must be zero, as this
-            corresponds to the reference property for for "mask" atoms. (default: None)
-        outnet (callable): Network used for atomistic outputs. Takes schnetpack input
-            dictionary as input. Output is not normalized. If set to None,
-            a pyramidal network is generated automatically. (default: None)
-    Returns:
-        tuple: prediction for property
-        If contributions is not None additionally returns atom-wise contributions.
-        If derivative is not None additionally returns derivative w.r.t. atom positions.
+    Predicts atom-wise contributions and accumulates global prediction,
+    e.g. for the energy.
+
+    Parameters
+    ----------
+    n_in : int
+        input dimension of representation
+    n_out : int, default=1
+        output dimension of target property
+    aggregation_mode : str, default=sum
+        one of {sum, avg}
+    n_layers : int, default=2
+        number of nn in output network
+    n_neurons : list of int or None, default=None
+        number of neurons in each layer of the output network.
+        If `None`, divide neurons by 2 in each layer.
+    activation : collable, default=schnetpack.nn.activations.shifted_softplus
+        activation function for hidden nn
+    property : str, default="y"
+        name of the output property
+    contributions : str or None, default=None
+        Name of property contributions in return dict.
+        No contributions returned if None.
+    derivative : str or None, default=None
+        Name of property derivative. No derivative returned if None.
+    negative_dr : bool, default=False
+        Multiply the derivative with -1 if True.
+    stress : str or None, default=None
+        Name of stress property. Compute the derivative with
+        respect to the cell parameters if not None.
+    create_graph : bool, default=False
+        If False, the graph used to compute the grad will be freed.
+        Note that in nearly all cases setting this option to True is not
+        needed and often can be worked around in a much more efficient way.
+        Defaults to the value of create_graph.
+    mean : torch.Tensor or None, default=None
+        mean of property
+    stddev : torch.Tensor or None, default=None
+        standard deviation of property
+    atomref : torch.Tensor or None, default=None
+        reference single-atom properties. Expects
+        an (max_z + 1) x 1 array where atomref[Z] corresponds to the reference
+        property of element Z. The value of atomref[0] must be zero, as this
+        corresponds to the reference property for for "mask" atoms.
+    outnet : callable, default=None
+        Network used for atomistic outputs. Takes schnetpack input
+        dictionary as input. Output is not normalized. If set to None,
+        a pyramidal network is generated automatically.
     """
 
     def __init__(
@@ -181,8 +207,20 @@ class Atomwise(nn.Module):
             )
 
     def forward(self, inputs):
-        r"""
+        """
         predicts atomwise property
+
+        Parameters
+        ----------
+        inputs : torch.Tensor
+            batch of input values.
+
+        Returns
+        -------
+        dict
+            prediction for property
+            If contributions is not None additionally returns atom-wise contributions.
+            If derivative is not None additionally returns derivative w.r.t. atom positions.
         """
         atomic_numbers = inputs[Properties.Z]
         atom_mask = inputs[Properties.atom_mask]
