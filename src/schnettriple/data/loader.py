@@ -14,7 +14,9 @@ __all__ = ["AtomsLoaderTriple"]
 
 def _collate_aseatoms_modify(examples):
     """
-    Build batch from systems and properties & apply padding
+    Build batch from systems and properties &
+    apply padding
+
     Parameters
     ----------
     examples : list
@@ -114,8 +116,8 @@ class AtomsLoaderTriple(AtomsLoader):
     batch_size : int, default=1
         how many samples per batch to load.
     shuffle : bool, default=False
-        set to ``True`` to have the data reshuffled at every epoch.
-    sampler : Sampler
+        set to True to have the data reshuffled at every epoch.
+    sampler : torch.utils.data.Sampler
         defines the strategy to draw samples from the dataset. If specified, ``shuffle`` must be False.
     batch_sampler : Sampler
         like sampler, but returns a batch of indices at a time. Mutually exclusive with batch_size, shuffle,
@@ -126,10 +128,10 @@ class AtomsLoaderTriple(AtomsLoader):
     collate_fn : callable, default=_collate_aseatoms_modify
         merges a list of samples to form a mini-batch.
     pin_memory : bool
-        If ``True``, the data loader will copy tensors into CUDA pinned memory before returning them.
+        If True, the data loader will copy tensors into CUDA pinned memory before returning them.
     drop_last : bool, default=False
-        set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by the batch size.
-        If ``False`` and the size of dataset is not divisible by the batch size, then the last batch will be smaller.
+        set to True to drop the last incomplete batch, if the dataset size is not divisible by the batch size.
+        If False and the size of dataset is not divisible by the batch size, then the last batch will be smaller.
     timeout : numeric, default=0
         if positive, the timeout value for collecting a batch from workers. Should always be non-negative.
     worker_init_fn : callable, default=None
