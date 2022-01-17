@@ -86,7 +86,7 @@ class AngularDistribution(nn.Module):
         number of angular filter.
     zeta : float, default=8.0
         zeta value of angular filter.
-    trainable_theta : bool, default=True
+    trainable : bool, default=True
         If True, offset values are adjusted during training process.
 
     References
@@ -101,11 +101,11 @@ class AngularDistribution(nn.Module):
         self,
         n_theta: int = 10,
         zeta: float = 8.0,
-        trainable_theta: bool = True,
+        trainable: bool = True,
     ):
         super(AngularDistribution, self).__init__()
         self.theta_filter = ThetaDistribution(
-            n_theta=n_theta, zeta=zeta, trainable=trainable_theta
+            n_theta=n_theta, zeta=zeta, trainable=trainable
         )
 
     def forward(
