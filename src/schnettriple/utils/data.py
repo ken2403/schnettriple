@@ -34,9 +34,9 @@ def get_statistics(
 
     Returns
     -------
-    mean : dict
+    mean : dict of torch.Tensor
         mean values for the selected properties
-    stddev : dict
+    stddev : dict of torch.Tensor
         stddev values for the selected properties
     """
     # check if split file exists
@@ -129,16 +129,17 @@ def get_dataset(args, environment_provider, logging=None):
 
     Parameters
     ----------
-        args : argparse.Namespace
-            parsed arguments
-        environment_provider : schetpack.environment.BaseEnvironmentProvider
-            environment-provider of dataset
-        logging : default=None
-            logger
+    args : argparse.Namespace
+        parsed arguments
+    environment_provider : schetpack.environment.BaseEnvironmentProvider
+        environment-provider of dataset
+    logging : default=None
+        logger
+
     Returns
     -------
-        schnetpack.data.AtomsData
-            dataset
+    dataset : schnetpack.data.AtomsData
+        dataset
     """
     if args.dataset == "qm9":
         if logging:
