@@ -236,9 +236,13 @@ class SchNetAnalysis:
         preds : dict
             dict with predictions values in torch.tensor type.
         """
-        dataset = spk.AtomsData(self.dbpath, collect_triples=self.triples)
         environment_provider = self._get_environment_provider(
             environment_provider=environment, cutoff=cutoff, device=device
+        )
+        dataset = spk.AtomsData(
+            self.dbpath,
+            collect_triples=self.triples,
+            environment_provider=environment_provider,
         )
         converter = spk.data.AtomsConverter(
             environment_provider=environment_provider,
