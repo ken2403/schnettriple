@@ -145,8 +145,8 @@ class SchNetAnalysis:
                     in_prop.append(in_data)
                     out_prop.append(out_data)
 
-        in_prop = np.array(in_prop)
-        out_prop = np.array(out_prop)
+        in_prop = np.array(in_prop, dtype=object)
+        out_prop = np.array(out_prop, dtype=object)
         logging.info("the calculation is done!")
 
         if save:
