@@ -1,34 +1,22 @@
-[[source]]
-name= "pypi"
-url= "https://pypi.org/simple"
-verify_ssl= true
-
-[[source]]
-name= "pytorch"
-url= "https://download.pytorch.org/whl/torch_stable.html"
-verify_ssl= false
-
 [packages]
-torch= {index= "pytorch",version= ">=0.4.0"}
+torch = ">=0.4.1"
 numpy = "*"
-pandas = "*"
 matplotlib = "*"
-sklearn = "*"
 ase = ">=3.19"
 schnetpack = "*"
 h5py = "*"
 tqdm = "*"
 tensorboardX = "*"
-pyyaml = "*"
+pytest = "*"
+pytest-datadir = "*"
+pre-commit = "*"
+black = "*"
+PyYAML = "*"
 
 [dev-packages]
 pytest = "*"
 pytest-datadir = "*"
 pytest-console-scripts = "*"
-pytest-datadir = "*"
 sacred = "*"
 pre-commit = "*"
 black = "*"
-
-[requires]
-python_version= "3.8"
