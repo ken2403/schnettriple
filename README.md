@@ -3,16 +3,17 @@
 [![Build Status](https://app.travis-ci.com/ken2403/schnettriple.svg?token=R7WEGjG9GVh2d2mwukqp&branch=main)](https://app.travis-ci.com/github/ken2403/schnettriple)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 
-SchNetTriple is an atomistic neural network potential modeled by adding the three-body interaction inspired by angular symmetry fucntion of *ANI-1*[3, 4] to learning process of *SchNet*[1, 2].
+SchNetTriple is an atomistic neural network potential modeled by adding the three-body interaction inspired by angular symmetry fucntion of ANI-1[3, 4] to learning process of SchNet[1, 2].
 
 **Requirements:**
-python 3
-ASE
-numpy
-PyTorch (>=1.7)
-schnetpack
-h5py
-Optional: tensorboardX
+
+- python 3
+- ASE
+- numpy
+- PyTorch (>=1.7)
+- schnetpack
+- h5py
+- Optional: tensorboardX
 ***Note: We recommend using a GPU for training the neural networks.***
 
 ## Installation
