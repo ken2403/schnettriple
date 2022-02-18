@@ -13,7 +13,7 @@ SchNetTriple is an atomistic neural network potential modeled by adding the thre
 - PyTorch (>=1.7)
 - schnetpack
 - h5py
-- Optional: tensorboardX
+- Optional: tensorboardX  
 ***Note: We recommend using a GPU for training the neural networks.***
 
 ## Installation
