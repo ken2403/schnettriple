@@ -156,7 +156,7 @@ class Trainer:
         device,
         n_epochs=sys.maxsize,
         regularization=False,
-        l1_lambda=0.01,
+        regularization_lambda=0.01,
     ):
         """
         Train the model for the given number of epochs on a specified device.
@@ -169,7 +169,7 @@ class Trainer:
             number of training epochs.
         regularization : bool, default=False
             If true, regularize the learning parameters.
-        l1_lambda : float, default=0.01
+        regularization_lambda : float, default=0.01
             coefficient of L1 regularization
         max_norm : float, default=0.25
             max norm of the gradients
@@ -221,7 +221,7 @@ class Trainer:
                         for param in self._model.parameters():
                             if param.requires_grad:
                                 l1_reg = l1_reg + torch.norm(param, 1)
-                        loss = loss + l1_lambda * l1_reg
+                        loss = loss + regularization_lambda * l1_reg
 
                     if device.type == "cuda":
                         # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
