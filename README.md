@@ -50,7 +50,7 @@ Prepare the dataset in [ase database format](https://wiki.fysik.dtu.dk/ase/ase/d
 Or prepare a atoms `.xyz` file and convert it to ase database using the script provided by schnetpack.
 
 ```bash
-spk_parse.py  ~/path_to_xyz  ~/save_path_to_db
+spk_parse.py  /path_to_xyz  /save_path_to_db
 ```
 
 ### Preparing argument file
@@ -60,7 +60,7 @@ The example file can be found in `schnettriple/src/scripts/`
 If the argument `.json` file is ready, you can train the model like this way.
 
 ```bash
-snt_run  from_json  ~/path_to_train.json
+snt_run  from_json  /path_to_train.json
 ```
 
 Learned model are saved as `best_model` in model direcctory.
@@ -71,7 +71,7 @@ The same script can also be used to evaluate the learned model.
 Prepare a `.json` file for evaluation.
 
 ```bash
-snt_run  from_json  ~/path_to_eval.json
+snt_run  from_json  /path_to_eval.json
 ```
 
 Write a result file `evaluation.txt` into the model directory.
@@ -82,7 +82,7 @@ You can also input one `POSCAR` structure file into the learned model to calcula
 This is useful for phonon calculations with [phonopy](https://phonopy.github.io/phonopy/).
 
 ```bash
-snt_run  from_poscar  ~/path_to_POSCAR  ~/path_to_learned_model  --cutoff  cutoff_radious
+snt_run  from_poscar  /path_to_POSCAR  /path_to_learned_model  --cutoff  cutoff_radious
 ```
 
 The calculation results are written to `schnettriple_run.xml` file and saved in the same directory as the `POSCAR`.
