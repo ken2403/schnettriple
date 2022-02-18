@@ -5,6 +5,7 @@ import schnetpack as spk
 from torch.utils.data.sampler import RandomSampler
 from schnetpack.utils.script_utils.script_error import ScriptError
 
+import schnettriple as snt
 from schnettriple.data.loader import AtomsLoaderTriple
 
 
@@ -148,7 +149,7 @@ def get_dataset(args, environment_provider, logging=None):
             args.datapath,
             download=True,
             load_only=[args.property],
-            collect_triples=args.model == "wacsf",
+            collect_triples=True,
             remove_uncharacterized=args.remove_uncharacterized,
             environment_provider=environment_provider,
         )
@@ -160,7 +161,7 @@ def get_dataset(args, environment_provider, logging=None):
             args.datapath,
             download=True,
             load_only=[args.property],
-            collect_triples=args.model == "wacsf",
+            collect_triples=True,
             num_heavy_atoms=args.num_heavy_atoms,
             environment_provider=environment_provider,
         )
@@ -172,7 +173,7 @@ def get_dataset(args, environment_provider, logging=None):
             args.datapath,
             args.molecule,
             download=True,
-            collect_triples=args.model == "wacsf",
+            collect_triples=True,
             environment_provider=environment_provider,
         )
         return md17
@@ -214,9 +215,9 @@ def get_dataset(args, environment_provider, logging=None):
         dataset = spk.AtomsData(
             args.datapath,
             load_only=load_only,
-            collect_triples=(args.model == "wacsf" or args.model == "schnettriple"),
+            collect_triples=True,
             environment_provider=environment_provider,
         )
         return dataset
     else:
-        raise spk.utils.ScriptError("Invalid dataset selected!")
+        raise snt.utils.script_utils.ScriptError("Invalid dataset selected!")

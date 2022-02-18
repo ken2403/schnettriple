@@ -26,31 +26,24 @@ def _get_cutoff_by_string(string_cutoff_function):
 
 def get_representation(args, train_loader=None):
     # build representation
-    if args.model == "schnettriple":
-        cutoff_network = _get_cutoff_by_string(args.cutoff_function)
+    cutoff_network = _get_cutoff_by_string(args.cutoff_function)
 
-        return SchNetTriple(
-            n_atom_basis=args.features,
-            n_filters=args.features,
-            n_interactions=args.interactions,
-            cutoff=args.cutoff,
-            n_gaussian_double=args.num_gaussian_double,
-            trainable_gaussian_double=args.trainable_gaussian_double,
-            n_gaussian_triple=args.num_gaussian_triple,
-            trainable_gaussian_triple=args.trainable_gaussian_triple,
-            n_theta=args.num_theta,
-            trainable_theta=args.trainable_theta,
-            zeta=args.zeta,
-            cutoff_network=cutoff_network,
-            normalize_filter=args.normalize_filter,
-            coupled_interactions=args.share_weights,
-        )
-    else:
-        raise ValueError(
-            "{} is not implemented! Please set model as 'schnetriple'!".format(
-                args.model
-            )
-        )
+    return SchNetTriple(
+        n_atom_basis=args.features,
+        n_filters=args.features,
+        n_interactions=args.interactions,
+        cutoff=args.cutoff,
+        n_gaussian_double=args.num_gaussian_double,
+        trainable_gaussian_double=args.trainable_gaussian_double,
+        n_gaussian_triple=args.num_gaussian_triple,
+        trainable_gaussian_triple=args.trainable_gaussian_triple,
+        n_theta=args.num_theta,
+        trainable_theta=args.trainable_theta,
+        zeta=args.zeta,
+        cutoff_network=cutoff_network,
+        normalize_filter=args.normalize_filter,
+        coupled_interactions=args.share_weights,
+    )
 
 
 def get_output_module_by_str(module_str):
@@ -80,7 +73,7 @@ def get_output_module(args, representation, mean, stddev, atomref):
     output_module_str = spk.utils.get_module_str(args)
     if output_module_str == "dipole_moment":
         return spk.atomistic.output_modules.DipoleMoment(
-            args.features,
+            n_in=args.features + (args.num_theta * args.num_gaussian_triple),
             predict_magnitude=True,
             mean=mean[args.property],
             stddev=stddev[args.property],
@@ -89,80 +82,38 @@ def get_output_module(args, representation, mean, stddev, atomref):
         )
     elif output_module_str == "electronic_spatial_extent":
         return spk.atomistic.output_modules.ElectronicSpatialExtent(
-            args.features,
+            n_in=args.features + (args.num_theta * args.num_gaussian_triple),
             mean=mean[args.property],
             stddev=stddev[args.property],
             property=args.property,
             contributions=contributions,
         )
     elif output_module_str == "atomwise":
-        if args.model == "schnettriple":
-            return snt.nn.output.Atomwise(
-                n_in=args.features + (args.num_theta * args.num_gaussian_triple),
-                # n_in=args.features,
-                aggregation_mode=spk.utils.get_pooling_mode(args),
-                n_layers=args.num_output_layer,
-                mean=mean[args.property],
-                stddev=stddev[args.property],
-                atomref=atomref[args.property],
-                property=args.property,
-                derivative=derivative,
-                negative_dr=negative_dr,
-                contributions=contributions,
-                stress=stress,
-            )
-        else:
-            return spk.atomistic.output_modules.Atomwise(
-                args.features,
-                aggregation_mode=spk.utils.get_pooling_mode(args),
-                mean=mean[args.property],
-                stddev=stddev[args.property],
-                atomref=atomref[args.property],
-                property=args.property,
-                derivative=derivative,
-                negative_dr=negative_dr,
-                contributions=contributions,
-                stress=stress,
-            )
-
+        return snt.nn.output.Atomwise(
+            n_in=args.features + (args.num_theta * args.num_gaussian_triple),
+            aggregation_mode=spk.utils.get_pooling_mode(args),
+            n_layers=args.num_output_layer,
+            mean=mean[args.property],
+            stddev=stddev[args.property],
+            atomref=atomref[args.property],
+            property=args.property,
+            derivative=derivative,
+            negative_dr=negative_dr,
+            contributions=contributions,
+            stress=stress,
+        )
     elif output_module_str == "polarizability":
         return spk.atomistic.output_modules.Polarizability(
-            args.features,
+            n_in=args.features + (args.num_theta * args.num_gaussian_triple),
             aggregation_mode=spk.utils.get_pooling_mode(args),
             property=args.property,
         )
     elif output_module_str == "isotropic_polarizability":
         return spk.atomistic.output_modules.Polarizability(
-            args.features,
+            n_in=args.features + (args.num_theta * args.num_gaussian_triple),
             aggregation_mode=spk.utils.get_pooling_mode(args),
             property=args.property,
             isotropic=True,
-        )
-    # wacsf modules
-    elif output_module_str == "elemental_dipole_moment":
-        elements = frozenset((atomic_numbers[i] for i in sorted(args.elements)))
-        return spk.atomistic.output_modules.ElementalDipoleMoment(
-            representation.n_symfuncs,
-            n_hidden=args.n_nodes,
-            n_layers=args.n_layers,
-            predict_magnitude=True,
-            elements=elements,
-            property=args.property,
-        )
-    elif output_module_str == "elemental_atomwise":
-        elements = frozenset((atomic_numbers[i] for i in sorted(args.elements)))
-        return spk.atomistic.output_modules.ElementalAtomwise(
-            representation.n_symfuncs,
-            n_hidden=args.n_nodes,
-            n_layers=args.n_layers,
-            aggregation_mode=spk.utils.get_pooling_mode(args),
-            mean=mean[args.property],
-            stddev=stddev[args.property],
-            atomref=atomref[args.property],
-            elements=elements,
-            property=args.property,
-            derivative=derivative,
-            negative_dr=negative_dr,
         )
     else:
         raise NotImplementedError
