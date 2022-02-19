@@ -3,7 +3,6 @@ PyYAML
 
 torch>=0.4.1
 numpy
-matplotlib
 ase>=3.21
 schnetpack
 tensorboardX
