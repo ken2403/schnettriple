@@ -5,7 +5,7 @@
 
 ![model](./docs/image/model.png)
 
-SchNetTriple is an atomistic neural network potential modeled by adding the three-body interaction inspired by angular symmetry fucntion of ANI-1[3, 4] to learning process of SchNet[1, 2].
+SchNetTriple is an atomistic neural network potential modeled by adding the three-body interaction inspired by the angular symmetry fucntion of ANI-1[3] to learning process of SchNet [1, 2].
 
 **Requirements:**
 
