@@ -96,7 +96,8 @@ class FromPoscarToXml:
         converter = AtomsConverter(
             environment_provider=self._get_environment_provider(
                 environment_provider_str=environment_provider_str, cutoff=cutoff
-            )
+            ),
+            collect_triples=True,
         )
         # convert atoms object
         inputs = converter(at)
@@ -179,7 +180,9 @@ class FromPoscarToXml:
         """
         if save_path is None:
             save_path = pathlib.Path(self.poscar_path).parent
-        save_path = os.path.join(save_path, "schnettriple_run.xml")
+        else:
+            save_path = pathlib.Path(save_path)
+        save_path = save_path.join(save_path, "schnettriple_run.xml")
 
         model = torch.load(self.model_path, map_location=self.device)
         pred = model(inputs)
