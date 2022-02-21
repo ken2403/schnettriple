@@ -51,11 +51,12 @@ class FromPoscarToXml:
             (see also https://schnetpack.readthedocs.io/en/stable/modules/environment.html?highlight=environment)
         """
         inputs, at = self.from_poscar(
-            cutoff=cutoff, environment_provider=environment_provider
+            cutoff=cutoff, environment_provider_str=environment_provider
         )
         self.to_xml(inputs=inputs, atoms=at)
 
     def _get_environment_provider(
+        self,
         environment_provider_str: str,
         cutoff: float,
     ):
@@ -71,7 +72,7 @@ class FromPoscarToXml:
     def from_poscar(
         self,
         cutoff: float,
-        environment_provider: str = "ase",
+        environment_provider_str: str = "ase",
     ):
         """
         Parameters
@@ -93,7 +94,7 @@ class FromPoscarToXml:
         # construct converter
         converter = AtomsConverter(
             environment_provider=self._get_environment_provider(
-                environment_provider_str=environment_provider, cutoff=cutoff
+                environment_provider_str=environment_provider_str, cutoff=cutoff
             )
         )
         # convert atoms object
