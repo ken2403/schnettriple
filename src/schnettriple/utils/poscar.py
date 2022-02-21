@@ -12,6 +12,9 @@ from schnetpack.data import AtomsConverter
 __all__ = ["FromPoscarToXml"]
 
 
+SAVE_FILE_NAME = "schnettriple_run.xml"
+
+
 class FromPoscarToXml:
     """
     From POSCAR structure file and learned SchNetTriple model,
@@ -55,6 +58,10 @@ class FromPoscarToXml:
             cutoff=cutoff, environment_provider_str=environment_provider
         )
         self.to_xml(inputs=inputs, atoms=at)
+
+    @staticmethod
+    def showFileName():
+        return SAVE_FILE_NAME
 
     def _get_environment_provider(
         self,
@@ -182,7 +189,7 @@ class FromPoscarToXml:
             save_path = pathlib.Path(self.poscar_path).parent
         else:
             save_path = pathlib.Path(save_path)
-        save_path = save_path.join(save_path, "schnettriple_run.xml")
+        save_path = save_path.join(save_path, SAVE_FILE_NAME)
 
         model = torch.load(self.model_path, map_location=self.device)
         pred = model(inputs)
