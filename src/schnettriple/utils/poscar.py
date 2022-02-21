@@ -1,4 +1,3 @@
-import os
 import pathlib
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as md
