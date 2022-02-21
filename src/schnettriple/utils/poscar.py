@@ -1,4 +1,5 @@
 import os
+import pathlib
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as md
 import numpy as np
@@ -177,7 +178,7 @@ class FromPoscarToXml:
             save path of result .xml file. Default is same dirctory as POSCAR file.
         """
         if save_path is None:
-            save_path = os.path.pardir(os.path.abspath(self.poscar_path))
+            save_path = pathlib.Path(self.poscar_path).parent
         save_path = os.path.join(save_path, "schnettriple_run.xml")
 
         model = torch.load(self.model_path, map_location=self.device)
