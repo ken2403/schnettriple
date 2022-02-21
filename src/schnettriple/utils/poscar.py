@@ -111,7 +111,7 @@ class FromPoscarToXml:
 
         return inputs, at
 
-    def _convert_xml(pred, atoms):
+    def _convert_xml(self, pred, atoms):
         # get information of structure
         positions = atoms.get_positions()
         basis = np.array(atoms.get_cell())
